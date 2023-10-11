@@ -238,7 +238,7 @@ end
 function ICAssistant.onPlayerEnterCombat(event, player, enemy)
     -- 玩家进入战斗后开始观测
     fighting = false
-    onPlayerSpellCastCancel = RegisterPlayerEvent(PLAYER_EVENT_ON_SPELL_CAST, onPlayerSpellCast)
+    onPlayerSpellCastCancel = RegisterPlayerEvent(PLAYER_EVENT_ON_SPELL_CAST, ICAssistant.onPlayerSpellCast)
 end
 
 function ICAssistant.onPlayerLeaveCombat(event, player)

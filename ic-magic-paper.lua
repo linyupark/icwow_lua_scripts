@@ -1,8 +1,8 @@
 -- https://github.com/michaelbirdtx/lua_scripts/blob/main/magicSlate.lua
 
-require("ic-ambush")
-require("ic-buff-aura")
-require("ic-level-up")
+-- require("ic-ambush")
+-- require("ic-buff-aura")
+-- require("ic-level-up")
 
 print(">> Script: ic-magic-paper")
 
@@ -48,6 +48,11 @@ local function onSelectMagicSlate(event, player, object, sender, intid, code, me
             return
         end
         player:SetLevel(ICLvup.MaxPlayerLevel)
+        -- -- dk 单独处理 (80 满级 51，出生 55级)
+        -- if player:GetClass() == 6 then
+        --     player:ResetTalents(true)
+        --     player:SetFreeTalentPoints(26 + (ICLvup.MaxPlayerLevel - 55))
+        -- end
         player:SendBroadcastMessage("如你所愿～你这只鸡比KFC还早熟")
     elseif intid == 4 then
         ICBuffAura.add(player)

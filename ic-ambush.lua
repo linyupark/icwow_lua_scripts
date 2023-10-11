@@ -139,30 +139,8 @@ end
 Ambush = {} -- table to hold the functions.
 -- local AmbushQueues = {} -- table to hold monsters that are queued to attack.
 
--- 纪录已经刷出且没有死亡的生物，要是玩家死亡需要手动清除这些生物
-Ambush.SpawnedCreatures = {}
-
-function Ambush.SpawnedCreaturesRemove(creature)
-    for i, c in ipairs(Ambush.SpawnedCreatures) do
-        if c == creature then
-            table.remove(Ambush.SpawnedCreatures, i)
-            -- 如果没死就60s后回收
-            if not creature:IsDead() then
-                creature:DespawnOrUnsummon(60000)
-            end
-            break
-        end
-    end
-end
-
-function Ambush.SpawnedCreaturesRemoveAll()
-    for i, c in ipairs(Ambush.SpawnedCreatures) do
-        table.remove(Ambush.SpawnedCreatures, i)
-        if not c:IsDead() then
-            c:DespawnOrUnsummon(0)
-        end
-    end
-end
+-- -- 纪录已经刷出且没有死亡的生物，要是玩家死亡需要手动清除这些生物
+-- Ambush.SpawnedCreatures = {}
 
 -- 纪录战斗回合（只有战斗胜利才加1）
 Ambush.BattleRounds = 0
@@ -233,14 +211,14 @@ function Ambush.spawnAndAttackPlayer(_eventID, _delay, _repeats, player) -- {{{
                 -- 新生成的精英怪，开刷
                 Ambush.randomSpawn(player, true)
             else
-                -- 单刷，普通为主，30%概率给精英
+                -- 单刷，普通为主，19%概率给精英
                 local rate = math.random(0, 10)
                 if (rate > 8) then
-                    Ambush.setupAmbushQueue(player, 0)
-                    Ambush.randomSpawn(player, false)
-                else
                     Ambush.setupAmbushQueue(player, 1)
                     Ambush.randomSpawn(player, true)
+                else
+                    Ambush.setupAmbushQueue(player, 0)
+                    Ambush.randomSpawn(player, false)
                 end
             end
         else
@@ -386,11 +364,13 @@ function Ambush.randomSpawn(player, isRare) -- {{{
 
     if isRare then
         queueType = "Ambush.rare-queue"
-        corpseDespawnType  = 8
-        corpseDespawnTimer = nil
+        -- corpseDespawnType  = 8
+        corpseDespawnType = 4 -- despawns after a specified time after the creature is out of combat
+        corpseDespawnTimer = 60 * 1000 * 5
     else
         queueType = "Ambush.queue"
-        corpseDespawnType  = 6
+        -- corpseDespawnType  = 6
+        corpseDespawnType = 4 -- despawns after a specified time after the creature is out of combat
         corpseDespawnTimer = 60 * 1000 -- 60 seconds
     end
 
@@ -404,13 +384,11 @@ function Ambush.randomSpawn(player, isRare) -- {{{
     player:SetData(queueType, playerQueue)
 
     -- icwow 通过生物id获取中文名
-    local row = WorldDBQuery("SELECT `Name` FROM creature_template_locale WHERE `entry` = ".. creatureId .." AND `locale` = '".. Player:GetDbcLocale() .."' LIMIT 1;")
+    local row = WorldDBQuery("SELECT `Name` FROM creature_template_locale WHERE `entry` = ".. creatureId .." AND `locale` = 'zhCN' LIMIT 1;")
 
     if isRare then
-        -- print("Rare creature spawn: " .. row:GetString(0))
         player:SendBroadcastMessage("这次的敌人不简单，它是：" .. row:GetString(0) .. "!")
     else
-        -- print("Ambush! Watch out, here comes " .. row:GetString(0) .. "!")
         player:SendBroadcastMessage("来了，伏击者是：" .. row:GetString(0) .. "!")
     end
 
@@ -419,6 +397,8 @@ function Ambush.randomSpawn(player, isRare) -- {{{
               x, y       = Movement.getPlusSpawnPosition(x, y, ambush_min_distance, ambush_max_distance)
                     z    = player:GetMap():GetHeight(x, y)
                        o = math.random(0, 6.28)
+
+        -- 刷怪了
         local creature = player:SpawnCreature(creatureId, x, y, z, o,
                                               corpseDespawnType,
                                               corpseDespawnTimer)
@@ -445,12 +425,7 @@ function Ambush.randomSpawn(player, isRare) -- {{{
             if isRare then 
                 player:SetData("Ambush.is-in-boss-fight", true)
             end 
-            -- player:SetData("Ambush.num-ambushers", (player:GetData("Ambush.num-ambushers") or 0) + 1)
             
-            -- 增加到现存生物table里
-            table.insert(Ambush.SpawnedCreatures, creature)
-            print(player:GetName().."剩余敌人数: "..#Ambush.SpawnedCreatures)
-
             creature:RegisterEvent(Ambush.chasePlayer, 1000, 1)
         end
     end
@@ -460,8 +435,6 @@ end -- }}}
 
 function Ambush.chasePlayer(_eventID, _delay, _repeats, creature) -- {{{
     if creature:IsDead() then
-        -- 怪物死了就从table里删除
-        Ambush.SpawnedCreaturesRemove(creature)
         return
     end
                                       -- DISTNACE FROM THE MIDPOINT BETWEEN THE PLAYER AND THE
@@ -496,62 +469,59 @@ function Ambush.chasePlayer(_eventID, _delay, _repeats, creature) -- {{{
     end -- }}}
 
     if Movement.isCloseEnough(creatureX, creatureY, playerX, playerY, 5) then
+        -- 开打
+        player:SetData("Ambush.num-ambushers", (player:GetData("Ambush.num-ambushers") or 0) + 1)
+        print(player:GetName().."剩余敌人数: "..player:GetData("Ambush.num-ambushers"))
         creature:SetHomePosition(creatureX, creatureY, creatureZ, creatureO)
         creature:AttackStart(player)
     else
-        local targetX, targetY = Movement.getMidpoint( creature:GetX(),
-                                                       creature:GetY(),
-                                                       playerX,
-                                                       playerY
-                                                     )
-        if player:GetMapId() ~= creature:GetMapId() then -- {{{
-            -- if the player is on the border between one map and another while
-            -- the creatures are chasing them, then the creature will get stuck
-            -- on the border and not be able to cross over. This is a problem
-            -- because the creature will not be able to attack the player and
-            -- the player will not be able to attack the creature. So, if the
-            -- player and the creature are on different maps, then just despawn
-            -- the creature and attempt to respawn it on the player's map.
-            print("player and creature are on different maps, respawning")
-            -- player:SetData("Ambush.num-ambushers", (player:GetData("Ambush.num-ambushers") or 1) - 1)
+        -- 距离不够打架
+        local targetX, targetY = Movement.getMidpoint(
+            creature:GetX(),
+            creature:GetY(),
+            playerX,
+            playerY
+        )
+        if player:GetMapId() ~= creature:GetMapId() then
+            player:SendBroadcastMessage("伏击者被送到了另外一个平行宇宙...")
             Ambush.addCreatureToQueue(player, creature:GetEntry(), creature:GetLevel(), creature:GetLevel(), false) -- setting isRare to false because it doesn't matter which queue the creature spawns in
-            -- player:RegisterEvent(Ambush.spawnCreature, 1000, 1)
-            -- creature:DespawnOrUnsummon(0)
-            Ambush.SpawnedCreaturesRemove(creature)
-        end -- }}}
-
-        if Movement.getLazyDistance(creatureX, creatureY, targetX, targetY) > CREATURE_MAX_DISTANCE then
-            print(Movement.getLazyDistance(creatureX, creatureY, targetX, targetY) .." yards is too far away, despawning")
+            creature:DespawnOrUnsummon(0)
             -- player:SetData("Ambush.num-ambushers", (player:GetData("Ambush.num-ambushers") or 1) - 1)
-            -- creature:DespawnOrUnsummon(0)
-            Ambush.SpawnedCreaturesRemove(creature)
+            return
+        end -- }}}
+        if Movement.getLazyDistance(creatureX, creatureY, targetX, targetY) > CREATURE_MAX_DISTANCE then
+            player:SendBroadcastMessage("伏击者迷路了...")
+            -- print(Movement.getLazyDistance(creatureX, creatureY, targetX, targetY) .." yards is too far away, despawning")
+            creature:DespawnOrUnsummon(0)
+            -- player:SetData("Ambush.num-ambushers", (player:GetData("Ambush.num-ambushers") or 1) - 1)
+            return
         end
+        -- 尝试接近玩家
         local targetZ = creature:GetMap():GetHeight(targetX, targetY)
-
         creature:MoveTo(math.random(0, 4294967295), targetX, targetY, targetZ)
         creature:RegisterEvent(Ambush.chasePlayer, 1000, 1)
     end
 end -- }}}
 
 function Ambush.onCreatureDeath(event, killer, creature) -- {{{
-    print("on creature death")
     local owning_player_ID = creature:GetData("Ambush.chase-target") or nil
     if owning_player_ID then
         local player = GetPlayerByGUID(owning_player_ID)
         if player then
             if player:GetData("Ambush.is-in-boss-fight") then
-                print("player no longer in a boss fight")
+                -- print("player no longer in a boss fight")
                 player:SetData("Ambush.is-in-boss-fight", false)
             end
-            -- local ambushersNum = player:GetData("Ambush.num-ambushers") or 1
-            -- if ambushersNum > 0 then
-            --     player:SetData("Ambush.num-ambushers", ambushersNum - 1)
-            -- end
-            Ambush.SpawnedCreaturesRemove(creature)
-            print(player:GetName().."剩余敌人数: "..#Ambush.SpawnedCreatures)
+            local ambushersNum = player:GetData("Ambush.num-ambushers") or 1
+            if ambushersNum > 0 then
+                player:SetData("Ambush.num-ambushers", ambushersNum - 1)
+            end
+            print(player:GetName().."剩余敌人数: "..ambushersNum)
             Ambush.BattleRounds = Ambush.BattleRounds + 1
             player:SendBroadcastMessage("哎哟不错哦，击杀 " .. Ambush.BattleRounds .. " 轮!")
         end
+    else
+        
     end
 end -- }}}
 
@@ -559,19 +529,29 @@ end -- }}}
 
 Ambush.LoopFightCancel = nil
 
+function Ambush.onFinishReward(player)
+    if Ambush.LoopFightCancel ~= nil then
+        player:RemoveEventById(Ambush.LoopFightCancel)
+    end
+    Ambush.LoopFightCancel = nil
+    player:SendBroadcastMessage("伏击结束...一共击杀 "..Ambush.BattleRounds.." 轮!")
+    -- 奖励结算 TODO
+    Ambush.setupPlayer(nil, player)
+end
+
 function Ambush.onStartFight(_eventid, _delay, _repeats, player)
 
     -- 关闭开关
     if (player:GetData("Ambush.state") or "off") == "off" then
-        if Ambush.LoopFightCancel ~= nil then
-            player:RemoveEventById(Ambush.LoopFightCancel)
-        end
-        Ambush.LoopFightCancel = nil
-        player:SendBroadcastMessage("伏击结束...一共击杀 "..Ambush.BattleRounds.." 轮!")
-        -- 奖励结算 TODO
-        Ambush.setupPlayer(nil, player)
+        Ambush.onFinishReward(player)
+        return
     end
 
+    if player:IsDead() then
+        player:SendBroadcastMessage("死人还逞强...以后再来吧...")
+        Ambush.onFinishReward(player)
+        return
+    end
     if not player:IsStandState() then
         player:SendBroadcastMessage("你坐着准备挨打么??请站起来...")
         return
@@ -580,22 +560,11 @@ function Ambush.onStartFight(_eventid, _delay, _repeats, player)
         player:SendBroadcastMessage("伏击者都是旱鸭子...我们上岸开战...")
         return
     end
-    -- if player:GetData("Ambush.is-in-boss-fight") or (player:GetData("Ambush.num-ambushers") or 0) >= 2 then
-        if player:GetData("Ambush.is-in-boss-fight") or #Ambush.SpawnedCreatures >= 2 then
+    if player:GetData("Ambush.is-in-boss-fight") or (player:GetData("Ambush.num-ambushers") or 0) >= 2 then
         player:SendBroadcastMessage("伏击者表示我们不欺负人...先等你会儿...")
         return
     end
-    if player:IsDead() then
-        player:SendBroadcastMessage("死人还逞强...以后再来吧...")
-        -- 死了就关闭开关
-        if Ambush.LoopFightCancel ~= nil then
-            player:RemoveEventById(Ambush.LoopFightCancel)
-        end
-        Ambush.LoopFightCancel = nil
-        player:SendBroadcastMessage("伏击结束...")
-        Ambush.setupPlayer(nil, player)
-        return
-    end
+    
     Ambush.spawnAndAttackPlayer(nil, nil, nil, player)
 end
 
@@ -614,10 +583,9 @@ end
 function Ambush.setupPlayer(event, player)
     player:SetData("Ambush.queue", {})
     player:SetData("Ambush.rare-queue", {})
-    -- player:SetData("Ambush.num-ambushers", 0)
+    player:SetData("Ambush.num-ambushers", 0)
     player:SetData("Ambush.state", "off")
     Ambush.BattleRounds = 0
-    Ambush.SpawnedCreaturesRemoveAll()
 end
 
 RegisterPlayerEvent(PLAYER_EVENT_ON_LOGIN,  Ambush.setupPlayer)

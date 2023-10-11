@@ -949,7 +949,7 @@ function ICLvup.onLevelChange(event, player, oldLevel)
     end
 
     -- icwow 每升1级增加level 10000 = 1g
-    player:ModifyMoney((oldLevel + 1) * 5000)
+    player:ModifyMoney((oldLevel + 1) * 3000)
 end
 
 function ICLvup.onLearnTalent(event, player, talentId, talentRank, spellId)
