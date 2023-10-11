@@ -1,4 +1,4 @@
-print(">> Script: 升级奖励.")
+print(">> Script: ic-lvup-reward")
 
 local Config_Gold = {}
 local Config_ItemId = {}
