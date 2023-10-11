@@ -215,23 +215,20 @@ Ambush.BANNED_RARE_IDS = { 0, -- {{{
 
 ---------------------------------------------------------------------------------------------------
 
--- ranks: 0 = regular mob, 2 = rare elite, 4 = rare
--- this function determines which queue to use when spawning a monster
 function Ambush.spawnAndAttackPlayer(_eventID, _delay, _repeats, player) -- {{{
     local next = next
     if next(player:GetData("Ambush.queue") or {}) == nil then
-        local playerLevel = player:GetLevel()
         if next(player:GetData("Ambush.rare-queue") or {}) == nil then
             if player:IsInGroup() then
                 -- 组队的情况（精英为主）
                 if player:GetGroup():GetMembersCount() > 2 then
                     -- 组队中就刷稀有精英（ > 2人）
-                    print("Ambush.setupAmbushQueue(playerLevel, 2=rare elite) when group member > 2")
-                    Ambush.setupAmbushQueue(playerLevel, 2)
+                    print("Ambush.setupAmbushQueue(2=rare elite) when group member > 2")
+                    Ambush.setupAmbushQueue(player, math.random(2, 4))
                 else
                     -- 一般精英（2人）
-                    print("Ambush.setupAmbushQueue(playerLevel, 4=rare) when group member == 2")
-                    Ambush.setupAmbushQueue(playerLevel, 4)
+                    print("Ambush.setupAmbushQueue(4=rare) when group member == 2")
+                    Ambush.setupAmbushQueue(player, 1)
                 end
                 -- 新生成的精英怪，开刷
                 Ambush.randomSpawn(player, true)
@@ -239,10 +236,10 @@ function Ambush.spawnAndAttackPlayer(_eventID, _delay, _repeats, player) -- {{{
                 -- 单刷，普通为主，30%概率给精英
                 local rate = math.random(0, 10)
                 if (rate > 8) then
-                    Ambush.setupAmbushQueue(playerLevel, 0)
+                    Ambush.setupAmbushQueue(player, 0)
                     Ambush.randomSpawn(player, false)
                 else
-                    Ambush.setupAmbushQueue(playerLevel, 4)
+                    Ambush.setupAmbushQueue(player, 1)
                     Ambush.randomSpawn(player, true)
                 end
             end
@@ -258,28 +255,49 @@ end -- }}}
 
 ---------------------------------------------------------------------------------------------------
 
--- this function generates an async sql query and calls pushToAmbushQueue() when it's done
-function Ambush.setupAmbushQueue(playerLevel, rank) -- {{{
-  local LEVEL_RANGE = 0
+-- 改成非异步查询
+function Ambush.setupAmbushQueue(player, rank) -- {{{
+    local playerLevel = player:GetLevel()
+    local LEVEL_RANGE = 0
+    
     if playerLevel >= 10 then
         LEVEL_RANGE = math.random(math.floor(playerLevel) / 5, math.floor(playerLevel / 3))
     end
-    WorldDBQueryAsync("SELECT `entry`, `minlevel`, `maxlevel`, `rank` FROM creature_template WHERE `minlevel` >= " .. playerLevel - LEVEL_RANGE .. " AND `maxlevel` <= " .. playerLevel .. " AND `rank` = " .. rank .. " AND `npcflag` = 0 AND `lootid` != 0 AND `type` IN (2, 3, 4, 5, 6, 9, 10);", Ambush.pushToAmbushQueue)
+    
+    local query = WorldDBQuery([[
+        SELECT `entry`, `minlevel`, `maxlevel`, `rank` 
+        FROM creature_template 
+        WHERE `minlevel` >= ]] .. playerLevel - LEVEL_RANGE .. [[ 
+        AND `maxlevel` <= ]] .. playerLevel + 1 .. [[ 
+        AND `rank` = ]] .. rank .. [[ 
+        AND `npcflag` = 0 
+        AND `lootid` != 0 
+        AND `type` IN (2, 3, 4, 5, 6, 9, 10) 
+        ORDER BY RAND() 
+        LIMIT 50;
+    ]])
+
+    Ambush.pushToAmbushQueue(query, player)
 end -- }}}
 
 -- this function builds an Ambush queue based on the results of the sql query
-function Ambush.pushToAmbushQueue(query) -- {{{
-    -- local LEVEL_MAX = 0 -- differential between player level and monster level
-    -- local LEVEL_MIN = 0 -- MAKE SURE YOU ALSO SET IN setup[Solo/Group]RareQueue()
+function Ambush.pushToAmbushQueue(query, player) -- {{{
     local isRare = false
     local MaxQueueSize = 10
+    local playerLevel = player:GetLevel()
+
+    if playerLevel == 0 then
+        print("Ambush.pushToAmbushQueue player level == 0 终止")
+        return
+    end
 
     local creatures = {}
     if query then
-        -- if creature is rare or rare elite
-        if query:GetUInt32(3) == 4 or
-           query:GetUInt32(3) == 2 then isRare = true
-                                   else isRare = false end
+        if query:GetUInt32(3) ~= 0 then
+            isRare = true
+        else 
+            isRare = false
+        end
         repeat
             local creature = {
                 id       = query:GetUInt32(0),
@@ -291,12 +309,12 @@ function Ambush.pushToAmbushQueue(query) -- {{{
             end
         until not query:NextRow()
     else
-        print("no query found wtf")
+        print("Ambush.pushToAmbushQueue 没有找到合适的生物")
         return
     end
 
-    if #creatures > MaxQueueSize then -- {{{
-        print("queue size too large, truncating")
+    if #creatures > MaxQueueSize then
+        print("找到匹配生物数: "..#creatures.."|缩编到数量: "..MaxQueueSize)
         local tempTable = {}
         local creature
         for i = 1, MaxQueueSize do
@@ -304,41 +322,18 @@ function Ambush.pushToAmbushQueue(query) -- {{{
             table.insert(tempTable, creature)
         end
         creatures = tempTable
-    end -- }}}
+    end
 
-    all_players = { alliance = GetPlayersInWorld(0, false),
-                    horde    = GetPlayersInWorld(1, false),
-                    neutral  = GetPlayersInWorld(2, false)
-                  }
-
-    -- for each player currently logged in
-    for _, faction in pairs(all_players) do
-        for _, player in pairs(faction) do
-            local playerLevel = player:GetLevel()
-            if playerLevel ~= 0 then
-                if playerLevel >= 10 then
-                    LEVEL_RANGE = math.random(math.floor(playerLevel) / 5, math.floor(playerLevel / 2))
-                end
-                -- for each creature that we just queried
-                for _, creature in ipairs(creatures) do
-                    -- if this creature is appropriate for this player
-                    -- if playerLevel >= creature.minLevel - LEVEL_MIN and
-                    --    playerLevel <= creature.maxLevel + LEVEL_MAX then
-                    if playerLevel >= creature.minLevel then
-                        -- queue this creature for this player
-                        if isRare then
-                            tempTable = player:GetData("Ambush.rare-queue") or {}
-                            table.insert(tempTable, creature.id)
-                            player:SetData("Ambush.rare-queue", tempTable)
-                        else
-                            tempTable = player:GetData("Ambush.queue") or {}
-                            table.insert(tempTable, creature.id)
-                            player:SetData("Ambush.queue", tempTable)
-                        end
-                    end
-                end
+    for _, creature in ipairs(creatures) do
+        if playerLevel >= creature.minLevel then
+            if isRare then
+                tempTable = player:GetData("Ambush.rare-queue") or {}
+                table.insert(tempTable, creature.id)
+                player:SetData("Ambush.rare-queue", tempTable)
             else
-                print("player level == 0 which is weird")
+                tempTable = player:GetData("Ambush.queue") or {}
+                table.insert(tempTable, creature.id)
+                player:SetData("Ambush.queue", tempTable)
             end
         end
     end
