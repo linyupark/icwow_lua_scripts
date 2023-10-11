@@ -4,7 +4,7 @@ require("ic-ambush")
 require("ic-buff-aura")
 require("ic-level-up")
 
-print(">> Script: 便利图纸.")
+print(">> Script: ic-magic-paper")
 
 local PAPER_ENTRY = 25750
 
