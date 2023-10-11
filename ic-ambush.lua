@@ -1,8 +1,174 @@
 ---------------------------------------------------------------------------------------------------
 -- https://github.com/gabrilend/wow-chat/blob/main/ambush.lua
 
+Movement = {}
+
+function Movement.getCircleSpawnPosition(originX, originY, minDist, maxDist)
+    local theta = math.random(0, 6.28)
+    local radius = math.random(minDist, maxDist)
+    x = originX + math.cos(theta) * radius
+    y = originY + math.sin(theta) * radius
+    return x, y
+end
+
+function Movement.getBoxSpawnPosition(originX, originY, minDist, maxDist)
+    randInt = math.random(1, 4)
+    if randInt == 1 then
+        x = originX + math.random( minDist,  maxDist)
+        y = originY + math.random(-maxDist,  maxDist)
+    elseif randInt == 2 then
+        x = originX + math.random(-maxDist, -minDist)
+        y = originY + math.random(-maxDist,  maxDist)
+    elseif randInt == 3 then
+        x = originX + math.random(-maxDist,  maxDist)
+        y = originY + math.random( minDist,  maxDist)
+    elseif randInt == 4 then
+        x = originX + math.random(-maxDist,  maxDist)
+        y = originY + math.random(-maxDist, -minDist)
+    end
+
+    return x, y
+end
+
+-- this should make a rough circle around the player
+-- it's more like a plus shape but that's close enough
+function Movement.getPlusSpawnPosition(originX, originY, minDist, maxDist)
+    randInt = math.random(1, 4)
+    if randInt == 1 then
+        x = originX + math.random( minDist,  maxDist)
+        y = originY + math.random(-minDist,  minDist)
+    elseif randInt == 2 then
+        x = originX + math.random(-maxDist, -minDist)
+        y = originY + math.random(-minDist,  minDist)
+    elseif randInt == 3 then
+        x = originX + math.random(-minDist,  minDist)
+        y = originY + math.random( minDist,  maxDist)
+    elseif randInt == 4 then
+        x = originX + math.random(-minDist,  minDist)
+        y = originY + math.random(-maxDist, -minDist)
+    end
+
+    return x, y
+end
+
+function Movement.getLazyDistance(x1, y1, x2, y2)
+    local dist = math.abs(x1 - x2) + math.abs(y1 - y2)
+    local dx = math.abs(x1 - x2)
+    local dy = math.abs(y1 - y2)
+    return dist, dx, dy
+end
+
+function Movement.getInitialAngle(originX, originY, monsterX, monsterY)
+    -- Calculate the difference in x and y coordinates
+    local dx = monsterX - originX
+    local dy = monsterY - originY
+
+    -- Use atan2 to get the angle in radians
+    local angle = math.atan2(dy, dx)
+
+    return angle
+end
+
+function Movement.getOrbitPosition(originX, originY, radius, speed, dt, initialAngle)
+    -- Calculate the angular speed based on the monster's linear speed and the radius of the circle
+    local angular_speed = speed / radius
+
+    -- Compute the new angle after dt seconds
+    local new_angle = initialAngle + angular_speed * dt
+
+    -- Calculate the new position
+    local x = originX + math.cos(new_angle) * radius
+    local y = originY + math.sin(new_angle) * radius
+
+    return x, y
+end
+
+-- calculates a position on the exact opposite side of the given position
+-- x1 and y1 are the pivot point
+-- x2 and y2 are the initial point
+-- diagram:
+-- (initialX, initialY) ---------> (pivotX, pivotY) ---------> (x, y)
+function Movement.getPositionOppositePoint(initialX, initialY, pivotX, pivotY)
+    x = initialX + ((pivotX - initialX) * 2)
+    y = initialY + ((pivotY - initialY) * 2)
+
+    return x, y
+end
+
+function Movement.getMidpoint(x1, y1, x2, y2)
+    x = (x1 + x2) / 2
+    y = (y1 + y2) / 2
+
+    return x, y
+end
+
+-- function to calculate the squared distance between two points
+function Movement.squaredDistance(x1, y1, x2, y2)
+    local dx = x2 - x1
+    local dy = y2 - y1
+    return dx * dx + dy * dy
+end
+
+-- function to normalize a vector
+function Movement.normalize(dx, dy)
+    local length = math.sqrt(dx * dx + dy * dy)
+    return dx / length, dy / length
+end
+
+-- function to find the closest point on the circle to the given point
+function Movement.nearestPointOnCircle(circleX, circleY, circleRadius, pointX, pointY)
+    -- calculate the direction vector from the circle center to the point
+    local dx, dy = pointX - circleX, pointY - circleY
+
+    -- normalize the direction vector
+    dx, dy = normalize(dx, dy)
+
+    -- scale the direction vector by the radius of the circle
+    dx, dy = dx * circleRadius, dy * circleRadius
+
+    -- calculate the coordinates of the nearest point on the circle
+    local nearestX, nearestY = circleX + dx, circleY + dy
+
+    return nearestX, nearestY
+end
+
+function Movement.isCloseEnough(x1, y1, x2, y2, dist)
+    return Movement.squaredDistance(x1, y1, x2, y2) <= dist * dist
+end
+
 Ambush = {} -- table to hold the functions.
-local AmbushQueues = {} -- table to hold monsters that are queued to attack.
+-- local AmbushQueues = {} -- table to hold monsters that are queued to attack.
+
+-- 纪录已经刷出且没有死亡的生物，要是玩家死亡需要手动清除这些生物
+Ambush.SpawnedCreatures = {}
+
+function Ambush.SpawnedCreaturesRemove(creature)
+    for i, c in ipairs(Ambush.SpawnedCreatures) do
+        if c == creature then
+            table.remove(Ambush.SpawnedCreatures, i)
+            -- 如果没死就60s后回收
+            if not creature:IsDead() then
+                creature:DespawnOrUnsummon(60000)
+            end
+            break
+        end
+    end
+end
+
+function Ambush.SpawnedCreaturesRemoveAll()
+    for i, c in ipairs(Ambush.SpawnedCreatures) do
+        table.remove(Ambush.SpawnedCreatures, i)
+        if not c:IsDead() then
+            c:DespawnOrUnsummon(0)
+        end
+    end
+end
+
+-- 纪录战斗回合（只有战斗胜利才加1）
+Ambush.BattleRounds = 0
+
+-- 战斗回合胜利奖励(按顺序)
+Ambush.BattleRoundsReward = {}
 
 -- add more when you find them
 -- 7074 and 7073 are maybes, try fighting them and see if they're too hard
@@ -96,10 +262,9 @@ end -- }}}
 function Ambush.setupAmbushQueue(playerLevel, rank) -- {{{
   local LEVEL_RANGE = 0
     if playerLevel >= 10 then
-        LEVEL_RANGE = math.random(math.floor(playerLevel) / 5, math.floor(playerLevel / 2))
+        LEVEL_RANGE = math.random(math.floor(playerLevel) / 5, math.floor(playerLevel / 3))
     end
-    -- print("SELECT entry, minlevel, maxlevel, `rank` FROM creature_template WHERE minlevel >= " .. playerLevel - LEVEL_RANGE .. " AND maxlevel <= " .. playerLevel .. " AND `rank` = " .. rank .. " AND npcflag = 0 AND lootid != 0 AND `type` IN (2, 3, 4, 5, 6, 9, 10);")
-    WorldDBQueryAsync("SELECT entry, minlevel, maxlevel, `rank` FROM creature_template WHERE minlevel >= " .. playerLevel - LEVEL_RANGE .. " AND maxlevel <= " .. playerLevel + 3 .. " AND `rank` = " .. rank .. " AND npcflag = 0 AND lootid != 0 AND `type` IN (2, 3, 4, 5, 6, 9, 10);", Ambush.pushToAmbushQueue)
+    WorldDBQueryAsync("SELECT `entry`, `minlevel`, `maxlevel`, `rank` FROM creature_template WHERE `minlevel` >= " .. playerLevel - LEVEL_RANGE .. " AND `maxlevel` <= " .. playerLevel .. " AND `rank` = " .. rank .. " AND `npcflag` = 0 AND `lootid` != 0 AND `type` IN (2, 3, 4, 5, 6, 9, 10);", Ambush.pushToAmbushQueue)
 end -- }}}
 
 -- this function builds an Ambush queue based on the results of the sql query
@@ -244,7 +409,7 @@ function Ambush.randomSpawn(player, isRare) -- {{{
     player:SetData(queueType, playerQueue)
 
     -- icwow 通过生物id获取中文名
-    local row = WorldDBQuery("SELECT `Name` FROM creature_template_locale WHERE `entry` = ".. creatureId .." AND `locale` = 'zhCN' LIMIT 1;")
+    local row = WorldDBQuery("SELECT `Name` FROM creature_template_locale WHERE `entry` = ".. creatureId .." AND `locale` = '".. Player:GetDbcLocale() .."' LIMIT 1;")
 
     if isRare then
         -- print("Rare creature spawn: " .. row:GetString(0))
@@ -285,8 +450,12 @@ function Ambush.randomSpawn(player, isRare) -- {{{
             if isRare then 
                 player:SetData("Ambush.is-in-boss-fight", true)
             end 
-            player:SetData("Ambush.num-ambushers", (player:GetData("Ambush.num-ambushers") or 0) + 1)
-            print(player:GetName().."剩余敌人数: "..player:GetData("Ambush.num-ambushers"))
+            -- player:SetData("Ambush.num-ambushers", (player:GetData("Ambush.num-ambushers") or 0) + 1)
+            
+            -- 增加到现存生物table里
+            table.insert(Ambush.SpawnedCreatures, creature)
+            print(player:GetName().."剩余敌人数: "..#Ambush.SpawnedCreatures)
+
             creature:RegisterEvent(Ambush.chasePlayer, 1000, 1)
         end
     end
@@ -296,6 +465,8 @@ end -- }}}
 
 function Ambush.chasePlayer(_eventID, _delay, _repeats, creature) -- {{{
     if creature:IsDead() then
+        -- 怪物死了就从table里删除
+        Ambush.SpawnedCreaturesRemove(creature)
         return
     end
                                       -- DISTNACE FROM THE MIDPOINT BETWEEN THE PLAYER AND THE
@@ -311,6 +482,7 @@ function Ambush.chasePlayer(_eventID, _delay, _repeats, creature) -- {{{
                     creatureY,
                     creatureZ,
                     creatureO          = creature:GetLocation()
+    
 
     if player:IsDead() or not player:IsStandState() then -- {{{
         print("orbiting")
@@ -346,16 +518,18 @@ function Ambush.chasePlayer(_eventID, _delay, _repeats, creature) -- {{{
             -- player and the creature are on different maps, then just despawn
             -- the creature and attempt to respawn it on the player's map.
             print("player and creature are on different maps, respawning")
-            player:SetData("Ambush.num-ambushers", (player:GetData("Ambush.num-ambushers") or 1) - 1)
+            -- player:SetData("Ambush.num-ambushers", (player:GetData("Ambush.num-ambushers") or 1) - 1)
             Ambush.addCreatureToQueue(player, creature:GetEntry(), creature:GetLevel(), creature:GetLevel(), false) -- setting isRare to false because it doesn't matter which queue the creature spawns in
             -- player:RegisterEvent(Ambush.spawnCreature, 1000, 1)
-            creature:DespawnOrUnsummon(0)
+            -- creature:DespawnOrUnsummon(0)
+            Ambush.SpawnedCreaturesRemove(creature)
         end -- }}}
 
         if Movement.getLazyDistance(creatureX, creatureY, targetX, targetY) > CREATURE_MAX_DISTANCE then
             print(Movement.getLazyDistance(creatureX, creatureY, targetX, targetY) .." yards is too far away, despawning")
-            player:SetData("Ambush.num-ambushers", (player:GetData("Ambush.num-ambushers") or 1) - 1)
-            creature:DespawnOrUnsummon(0)
+            -- player:SetData("Ambush.num-ambushers", (player:GetData("Ambush.num-ambushers") or 1) - 1)
+            -- creature:DespawnOrUnsummon(0)
+            Ambush.SpawnedCreaturesRemove(creature)
         end
         local targetZ = creature:GetMap():GetHeight(targetX, targetY)
 
@@ -366,7 +540,7 @@ end -- }}}
 
 function Ambush.onCreatureDeath(event, killer, creature) -- {{{
     print("on creature death")
-    owning_player_ID = creature:GetData("Ambush.chase-target") or nil
+    local owning_player_ID = creature:GetData("Ambush.chase-target") or nil
     if owning_player_ID then
         local player = GetPlayerByGUID(owning_player_ID)
         if player then
@@ -374,11 +548,14 @@ function Ambush.onCreatureDeath(event, killer, creature) -- {{{
                 print("player no longer in a boss fight")
                 player:SetData("Ambush.is-in-boss-fight", false)
             end
-            local ambushersNum = player:GetData("Ambush.num-ambushers") or 1
-            if ambushersNum > 0 then
-                player:SetData("Ambush.num-ambushers", ambushersNum - 1)
-            end
-            print(player:GetName().."剩余敌人数: "..player:GetData("Ambush.num-ambushers"))
+            -- local ambushersNum = player:GetData("Ambush.num-ambushers") or 1
+            -- if ambushersNum > 0 then
+            --     player:SetData("Ambush.num-ambushers", ambushersNum - 1)
+            -- end
+            Ambush.SpawnedCreaturesRemove(creature)
+            print(player:GetName().."剩余敌人数: "..#Ambush.SpawnedCreatures)
+            Ambush.BattleRounds = Ambush.BattleRounds + 1
+            player:SendBroadcastMessage("哎哟不错哦，击杀 " .. Ambush.BattleRounds .. " 轮!")
         end
     end
 end -- }}}
@@ -395,7 +572,8 @@ function Ambush.onStartFight(_eventid, _delay, _repeats, player)
             player:RemoveEventById(Ambush.LoopFightCancel)
         end
         Ambush.LoopFightCancel = nil
-        player:SendBroadcastMessage("伏击结束...")
+        player:SendBroadcastMessage("伏击结束...一共击杀 "..Ambush.BattleRounds.." 轮!")
+        -- 奖励结算 TODO
         Ambush.setupPlayer(nil, player)
     end
 
@@ -407,7 +585,8 @@ function Ambush.onStartFight(_eventid, _delay, _repeats, player)
         player:SendBroadcastMessage("伏击者都是旱鸭子...我们上岸开战...")
         return
     end
-    if player:GetData("Ambush.is-in-boss-fight") or (player:GetData("Ambush.num-ambushers") or 0) >= 2 then
+    -- if player:GetData("Ambush.is-in-boss-fight") or (player:GetData("Ambush.num-ambushers") or 0) >= 2 then
+        if player:GetData("Ambush.is-in-boss-fight") or #Ambush.SpawnedCreatures >= 2 then
         player:SendBroadcastMessage("伏击者表示我们不欺负人...先等你会儿...")
         return
     end
@@ -440,12 +619,12 @@ end
 function Ambush.setupPlayer(event, player)
     player:SetData("Ambush.queue", {})
     player:SetData("Ambush.rare-queue", {})
-    player:SetData("Ambush.num-ambushers", 0)
+    -- player:SetData("Ambush.num-ambushers", 0)
     player:SetData("Ambush.state", "off")
+    Ambush.BattleRounds = 0
+    Ambush.SpawnedCreaturesRemoveAll()
 end
 
-PLAYER_EVENT_ON_LOGIN = 3
-PLAYER_EVENT_ON_KILL_CREATURE = 7
 RegisterPlayerEvent(PLAYER_EVENT_ON_LOGIN,  Ambush.setupPlayer)
 RegisterPlayerEvent(PLAYER_EVENT_ON_KILL_CREATURE, Ambush.onCreatureDeath, 0)
 
