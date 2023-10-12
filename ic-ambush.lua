@@ -1,6 +1,8 @@
 ---------------------------------------------------------------------------------------------------
 -- https://github.com/gabrilend/wow-chat/blob/main/ambush.lua
 
+print(">> Script: ic-ambush")
+
 Movement = {}
 
 function Movement.getCircleSpawnPosition(originX, originY, minDist, maxDist)

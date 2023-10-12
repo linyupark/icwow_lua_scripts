@@ -130,6 +130,10 @@ ICStone.func = {
         else
             player:SetData("Ambush.state", "off")
         end
+    end,
+    -- ic 自动完成任务
+    icQuestAC = function(player)
+        ICQuestAC.complete(player)
     end
 }
 
@@ -142,6 +146,7 @@ ICStone.menu = {
      "是否要做|cFFF0F000速成鸡|r ?"},
     {1, "记录位置", ICStone.func.setHome, GOSSIP_ICON_CHAT, false, "是否设置当前位置为|cFFF0F000家|r ?"},
     {1, "传送回家", ICStone.func.goHome, GOSSIP_ICON_CHAT, false, "是否传送回|cFFF0F000家|r ?"},
+    {1, "完成当前所有未完成的任务", ICStone.func.icQuestAC, GOSSIP_ICON_CHAT, false, "确定消费1%的钱来省事|r ?"},
     {1, "打开银行", ICStone.func.openBank, GOSSIP_ICON_MONEY_BAG},
     {1, "请赐予我力量吧!", ICStone.func.icBuffAura, GOSSIP_ICON_VENDOR},
     {1, "修理所有装备", ICStone.func.repairAll, GOSSIP_ICON_VENDOR, false, "确认花钱修理全部装备 ?"},
