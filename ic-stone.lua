@@ -1,4 +1,4 @@
-print(">>Script: ic-stone")
+print(">> Script: ic-stone")
 
 ICStone = {}
 

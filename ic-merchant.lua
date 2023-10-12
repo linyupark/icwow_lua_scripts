@@ -1,4 +1,4 @@
-print(">>Script: ic-merchant")
+print(">> Script: ic-merchant")
 
 ICMerchant = {}
 
@@ -394,7 +394,7 @@ function ICMerchant.SummonNPC(player)
             local map = player:GetMap()
             if map then
                 player:SendAreaTriggerMessage(map:GetName())
-                local x, y, z = player:GetX() + 1, player:GetY(), player:GetZ()
+                local x, y, z = player:GetX(), player:GetY(), player:GetZ()
                 local nz = map:GetHeight(x, y)
                 if (nz > z and nz < (z + 5)) then
                     z = nz
@@ -439,18 +439,16 @@ function ICMerchant.Select(event, player, creature, sender, intid, code, menu_id
         ICMerchant.AddMenu(player, creature, intid)
     else
         -- 先清除生物身上原有的物品，再添加新物品
-        local entry = creature:GetEntry()
-        VendorRemoveAllItems(entry)
+        VendorRemoveAllItems(ICMerchant.entry)
         local goods = ICMerchant.goods[intid] or {}
         for k, v in pairs(goods) do
-            AddVendorItem(entry, v, 0, 0, 0)
+            -- print("add item: "..tostring(v))
+            AddVendorItem(ICMerchant.entry, v, 0, 0, 0)
         end
-        player:SendListInventory(entry)
-        -- player:SendVendorWindow(entry)
+        player:SendListInventory(creature)
     end
 end
 
 math.randomseed(os.time())
 RegisterCreatureGossipEvent(ICMerchant.entry, GOSSIP_EVENT_ON_HELLO, ICMerchant.Book)
 RegisterCreatureGossipEvent(ICMerchant.entry, GOSSIP_EVENT_ON_SELECT, ICMerchant.Select)
-
