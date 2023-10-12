@@ -3,7 +3,7 @@ print(">>Script: ic-merchant")
 ICMerchant = {}
 
 -- 商人NPC
-ICMerchant.entry = 669003 -- 190099
+ICMerchant.entry = 190099
 ICMerchant.name = "IC随身商人"
 ICMerchant.keepTime = 90000 -- 90s
 ICMerchant.lastTime = 0
@@ -416,40 +416,41 @@ function ICMerchant.SummonNPC(player)
     end
 end
 
-function ICMerchant.AddMenu(player, unit, id)
+function ICMerchant.AddMenu(player, creature, id)
     player:GossipClearMenu() -- 清除菜单
     local menus = ICMerchant.goods[id]
     for k, v in pairs(menus) do
         player:GossipMenuAddItem(v[3] or GOSSIP_ICON_VENDOR, v[1] or "???", 0, (v[2] or k))
     end
-    player:GossipSendMenu(1, unit) -- 发送菜单
+    player:GossipSendMenu(1, creature) -- 发送菜单
 end
 
-function ICMerchant.Book(event, player, unit) -- 显示菜单
-    ICMerchant.AddMenu(player, unit, 0)
+function ICMerchant.Book(event, player, creature) -- 显示菜单
+    ICMerchant.AddMenu(player, creature, 0)
 end
 
--- math.randomseed(os.time())
-
-function ICMerchant.Select(event, player, unit, sender, intid, code, menu_id) -- 添加货物
+function ICMerchant.Select(event, player, creature, sender, intid, code, menu_id) -- 添加货物
     local text = ICMerchant.says[math.random(1, #ICMerchant.says)] or nil
     if (text) then
-        unit:SendUnitSay(text, 0)
+        creature:SendUnitSay(text, 0)
     end
     player:GossipComplete() -- 关闭菜单
     if (intid < 0x10) then
-        ICMerchant.AddMenu(player, unit, intid)
+        ICMerchant.AddMenu(player, creature, intid)
     else
-        local entry = unit:GetEntry()
+        -- 先清除生物身上原有的物品，再添加新物品
+        local entry = creature:GetEntry()
         VendorRemoveAllItems(entry)
         local goods = ICMerchant.goods[intid] or {}
         for k, v in pairs(goods) do
             AddVendorItem(entry, v, 0, 0, 0)
         end
-        player:SendVendorWindow(unit)
+        player:SendListInventory(entry)
+        -- player:SendVendorWindow(entry)
     end
 end
 
+math.randomseed(os.time())
 RegisterCreatureGossipEvent(ICMerchant.entry, GOSSIP_EVENT_ON_HELLO, ICMerchant.Book)
 RegisterCreatureGossipEvent(ICMerchant.entry, GOSSIP_EVENT_ON_SELECT, ICMerchant.Select)
 

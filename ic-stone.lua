@@ -134,16 +134,6 @@ ICStone.func = {
 }
 
 -- 交互菜单
--- 菜单号
--- local MMENU = 1
--- local TPMENU = 2
--- local GMMENU = 3
--- local ENCMENU = 4
--- -- 菜单类型
--- local FUNC = 1
--- local MENU = 2
--- local TP = 3
--- local ENC = 4
 ICStone.menu = {
     [1] = { -- 主菜单
     {1, "怪物随机伏击开启.",
@@ -154,8 +144,8 @@ ICStone.menu = {
     {1, "传送回家", ICStone.func.goHome, GOSSIP_ICON_CHAT, false, "是否传送回|cFFF0F000家|r ?"},
     {1, "打开银行", ICStone.func.openBank, GOSSIP_ICON_MONEY_BAG},
     {1, "请赐予我力量吧!", ICStone.func.icBuffAura, GOSSIP_ICON_VENDOR},
-    {1, "修理所有装备", ICStone.func.repairAll, GOSSIP_ICON_VENDOR, false, "确认花钱修理全部装备 ?"}
-    -- {1, "召唤商人", ICStone.onSummonMerchant, GOSSIP_ICON_MONEY_BAG}, {2, "地图传送", 2, GOSSIP_ICON_BATTLE}
+    {1, "修理所有装备", ICStone.func.repairAll, GOSSIP_ICON_VENDOR, false, "确认花钱修理全部装备 ?"},
+    {1, "召唤商人", ICMerchant.SummonNPC, GOSSIP_ICON_MONEY_BAG}, {2, "地图传送", 2, GOSSIP_ICON_BATTLE}
     },
     [2] = { -- 地图传送
     {2, "主要城市", 2 + 0x10, GOSSIP_ICON_BATTLE}, {2, "东部王国", 2 + 0x20, GOSSIP_ICON_BATTLE},
