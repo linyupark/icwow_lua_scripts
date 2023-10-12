@@ -9,6 +9,10 @@
     Copyright (C) 2014 EmuDevs <http://www.emudevs.com/>
 --]]
 
+-- 生物事件
+GOSSIP_EVENT_ON_HELLO = 1
+GOSSIP_EVENT_ON_SELECT = 2
+
 --玩家事件
 PLAYER_EVENT_ON_LOGIN = 3
 PLAYER_EVENT_ON_SPELL_CAST = 5
