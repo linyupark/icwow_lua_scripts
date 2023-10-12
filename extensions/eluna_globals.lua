@@ -9,6 +9,7 @@
     Copyright (C) 2014 EmuDevs <http://www.emudevs.com/>
 --]]
 
+--玩家事件
 PLAYER_EVENT_ON_LOGIN = 3
 PLAYER_EVENT_ON_SPELL_CAST = 5
 PLAYER_EVENT_ON_KILL_PLAYER = 6
@@ -20,6 +21,45 @@ PLAYER_EVENT_ON_ENTER_COMBAT = 33
 PLAYER_EVENT_ON_LEAVE_COMBAT = 34
 PLAYER_EVENT_ON_LEARN_TALENTS = 39
 PLAYER_EVENT_ON_COMMAND = 42
+
+--阵营
+TEAM_ALLIANCE = 0
+TEAM_HORDE = 1
+
+--菜单图标
+GOSSIP_ICON_CHAT            = 0                    -- 对话
+GOSSIP_ICON_VENDOR          = 1                    -- 货物
+GOSSIP_ICON_TAXI            = 2                    -- 传送
+GOSSIP_ICON_TRAINER         = 3                    -- 训练（书）
+GOSSIP_ICON_INTERACT_1      = 4                    -- 复活
+GOSSIP_ICON_INTERACT_2      = 5                    -- 设为我的家
+GOSSIP_ICON_MONEY_BAG       = 6                    -- 钱袋
+GOSSIP_ICON_TALK            = 7                    -- 申请 说话+黑色点
+GOSSIP_ICON_TABARD          = 8                    -- 工会（战袍）
+GOSSIP_ICON_BATTLE          = 9                    -- 加入战场 双剑交叉
+GOSSIP_ICON_DOT             = 10                   -- 加入战场
+
+--装备位置
+EQUIPMENT_SLOT_HEAD         = 0--头部
+EQUIPMENT_SLOT_NECK         = 1--颈部
+EQUIPMENT_SLOT_SHOULDERS    = 2--肩部
+EQUIPMENT_SLOT_BODY         = 3--身体
+EQUIPMENT_SLOT_CHEST        = 4--胸甲
+EQUIPMENT_SLOT_WAIST        = 5--腰部
+EQUIPMENT_SLOT_LEGS         = 6--腿部
+EQUIPMENT_SLOT_FEET         = 7--脚部
+EQUIPMENT_SLOT_WRISTS       = 8--手腕
+EQUIPMENT_SLOT_HANDS        = 9--手套
+EQUIPMENT_SLOT_FINGER1      = 10--手指1
+EQUIPMENT_SLOT_FINGER2      = 11--手指2
+EQUIPMENT_SLOT_TRINKET1     = 12--饰品1
+EQUIPMENT_SLOT_TRINKET2     = 13--饰品2
+EQUIPMENT_SLOT_BACK         = 14--背部
+EQUIPMENT_SLOT_MAINHAND     = 15--主手
+EQUIPMENT_SLOT_OFFHAND      = 16--副手
+EQUIPMENT_SLOT_RANGED       = 17--远程
+EQUIPMENT_SLOT_TABARD       = 18--徽章
+
 
 --------------------------------------------------------
 --[[
@@ -63,13 +103,13 @@ OBJECT_FIELD_TYPE                         = 0x0002 -- Size: 1, Type: INT, Flags:
 OBJECT_FIELD_ENTRY                        = 0x0003 -- Size: 1, Type: INT, Flags: PUBLIC
 OBJECT_FIELD_SCALE_X                      = 0x0004 -- Size: 1, Type: FLOAT, Flags: PUBLIC
 OBJECT_FIELD_PADDING                      = 0x0005 -- Size: 1, Type: INT, Flags: NONE
-local OBJECT_END                          = 0x0006
-local ITEM_END                            = OBJECT_END + 0x003A
-local UNIT_END                            = OBJECT_END + 0x008E
-local PLAYER_END                          = UNIT_END + 0x049A
-local GAMEOBJECT_END                      = OBJECT_END + 0x000C
-local DYNAMICOBJECT_END                   = OBJECT_END + 0x0006
-local CORPSE_END                          = OBJECT_END + 0x001E
+OBJECT_END                          = 0x0006
+ITEM_END                            = OBJECT_END + 0x003A
+UNIT_END                            = OBJECT_END + 0x008E
+PLAYER_END                          = UNIT_END + 0x049A
+GAMEOBJECT_END                      = OBJECT_END + 0x000C
+DYNAMICOBJECT_END                   = OBJECT_END + 0x0006
+CORPSE_END                          = OBJECT_END + 0x001E
 -- ITEM FIELD TYPES
 ITEM_FIELD_OWNER                          = OBJECT_END + 0x0000 -- Size: 2, Type: LONG, Flags: PUBLIC
 ITEM_FIELD_CONTAINED                      = OBJECT_END + 0x0002 -- Size: 2, Type: LONG, Flags: PUBLIC
