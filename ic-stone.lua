@@ -145,6 +145,7 @@ ICStone.menu = {
     {1, "打开银行", ICStone.func.openBank, GOSSIP_ICON_MONEY_BAG},
     {1, "请赐予我力量吧!", ICStone.func.icBuffAura, GOSSIP_ICON_VENDOR},
     {1, "修理所有装备", ICStone.func.repairAll, GOSSIP_ICON_VENDOR, false, "确认花钱修理全部装备 ?"},
+    {1, "免费重置天赋", ICStone.func.resetTalents, GOSSIP_ICON_TRAINER, false, "确认重置天赋 ?"},
     {1, "召唤商人", ICMerchant.SummonNPC, GOSSIP_ICON_MONEY_BAG}, {2, "地图传送", 2, GOSSIP_ICON_BATTLE}
     },
     [2] = { -- 地图传送
