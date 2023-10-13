@@ -211,7 +211,10 @@ function ICAssistant.onPlayerSpellCast(event, player, playerSpell, _)
         end
         -- 治疗
         spell = getRankedSpell("chainheal", hireling, 0)
-        hireling:CastSpell(player, spell, false)
+        -- print("chainheal spell: "..tostring(spell))
+        if spell then
+            hireling:CastSpell(player, spell, false)
+        end
     elseif fighting then
         -- 协助杀怪
         if not hireling:IsCasting() then

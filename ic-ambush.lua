@@ -213,21 +213,21 @@ function Ambush.spawnAndAttackPlayer(_eventID, _delay, _repeats, player) -- {{{
                 -- 新生成的精英怪，开刷
                 Ambush.randomSpawn(player, true)
             else
-                -- 单刷，普通为主，19%概率给精英
-                local rate = math.random(0, 10)
-                if (rate > 8) then
-                    Ambush.setupAmbushQueue(player, 1)
-                    Ambush.randomSpawn(player, true)
-                else
-                    Ambush.setupAmbushQueue(player, 0)
-                    Ambush.randomSpawn(player, false)
-                end
+                -- 单刷，普通
+                Ambush.setupAmbushQueue(player, 0)
+                Ambush.randomSpawn(player, false)
             end
         else
             -- 有精英怪队列，开刷
             Ambush.randomSpawn(player, true)
         end
     else
+        -- 整数回合代替刷精英(5,10,15...)
+        if Ambush.BattleRounds % 5 == 0 then
+            Ambush.setupAmbushQueue(player, 1)
+            Ambush.randomSpawn(player, true)
+            return
+        end
         -- 普通怪有队列，开刷
         Ambush.randomSpawn(player, false)
     end
@@ -238,17 +238,26 @@ end -- }}}
 -- 改成非异步查询
 function Ambush.setupAmbushQueue(player, rank) -- {{{
     local playerLevel = player:GetLevel()
-    local LEVEL_RANGE = 0
+    local decRange, incRange
     
-    if playerLevel >= 10 then
-        LEVEL_RANGE = math.random(math.floor(playerLevel) / 5, math.floor(playerLevel / 3))
+    if rank = 0 then
+        -- 普通怪就找跟玩家同等级
+        decRange = 0
+        incRange = 2
+    else
+        incRange = 0
+        if playerLevel < 20 then
+            decRange = playerLevel / 2
+        else
+            decRange = playerLevel / 4
+        end
     end
     
     local query = WorldDBQuery([[
         SELECT `entry`, `minlevel`, `maxlevel`, `rank` 
         FROM creature_template 
-        WHERE `minlevel` >= ]] .. playerLevel - LEVEL_RANGE .. [[ 
-        AND `maxlevel` <= ]] .. playerLevel + 1 .. [[ 
+        WHERE `minlevel` >= ]] .. playerLevel - decRange .. [[ 
+        AND `maxlevel` <= ]] .. playerLevel + incRange .. [[ 
         AND `rank` = ]] .. rank .. [[ 
         AND `npcflag` = 0 
         AND `lootid` != 0 
@@ -284,7 +293,7 @@ function Ambush.pushToAmbushQueue(query, player) -- {{{
                 minLevel = query:GetUInt32(1),
                 maxLevel = query:GetUInt32(2),
             }
-            print("生成敌人队列, id: "..creature.id)
+            -- print("生成敌人队列, id: "..creature.id)
             if not Ambush.isCreatureBanned(creature.id, isRare) then
                 table.insert(creatures, creature)
             end
@@ -428,7 +437,9 @@ function Ambush.randomSpawn(player, isRare) -- {{{
             if isRare then 
                 player:SetData("Ambush.is-in-boss-fight", true)
             end 
-            
+            -- 生物数+1
+            player:SetData("Ambush.num-ambushers", (player:GetData("Ambush.num-ambushers") or 0) + 1)
+            print(player:GetName().."剩余敌人数: "..player:GetData("Ambush.num-ambushers"))
             creature:RegisterEvent(Ambush.chasePlayer, 1000, 1)
         end
     end
@@ -473,8 +484,6 @@ function Ambush.chasePlayer(_eventID, _delay, _repeats, creature) -- {{{
 
     if Movement.isCloseEnough(creatureX, creatureY, playerX, playerY, 5) then
         -- 开打
-        player:SetData("Ambush.num-ambushers", (player:GetData("Ambush.num-ambushers") or 0) + 1)
-        print(player:GetName().."剩余敌人数: "..player:GetData("Ambush.num-ambushers"))
         creature:SetHomePosition(creatureX, creatureY, creatureZ, creatureO)
         creature:AttackStart(player)
     else
@@ -489,14 +498,14 @@ function Ambush.chasePlayer(_eventID, _delay, _repeats, creature) -- {{{
             player:SendBroadcastMessage("伏击者被送到了另外一个平行宇宙...")
             Ambush.addCreatureToQueue(player, creature:GetEntry(), creature:GetLevel(), creature:GetLevel(), false) -- setting isRare to false because it doesn't matter which queue the creature spawns in
             creature:DespawnOrUnsummon(0)
-            -- player:SetData("Ambush.num-ambushers", (player:GetData("Ambush.num-ambushers") or 1) - 1)
+            player:SetData("Ambush.num-ambushers", (player:GetData("Ambush.num-ambushers") or 1) - 1)
             return
         end -- }}}
         if Movement.getLazyDistance(creatureX, creatureY, targetX, targetY) > CREATURE_MAX_DISTANCE then
             player:SendBroadcastMessage("伏击者迷路了...")
             -- print(Movement.getLazyDistance(creatureX, creatureY, targetX, targetY) .." yards is too far away, despawning")
             creature:DespawnOrUnsummon(0)
-            -- player:SetData("Ambush.num-ambushers", (player:GetData("Ambush.num-ambushers") or 1) - 1)
+            player:SetData("Ambush.num-ambushers", (player:GetData("Ambush.num-ambushers") or 1) - 1)
             return
         end
         -- 尝试接近玩家
@@ -519,7 +528,7 @@ function Ambush.onCreatureDeath(event, killer, creature) -- {{{
             if ambushersNum > 0 then
                 player:SetData("Ambush.num-ambushers", ambushersNum - 1)
             end
-            print(player:GetName().."剩余敌人数: "..ambushersNum)
+            print(player:GetName().."击杀, 剩余敌人数: "..ambushersNum - 1)
             Ambush.BattleRounds = Ambush.BattleRounds + 1
             player:SendBroadcastMessage("哎哟不错哦，击杀 " .. Ambush.BattleRounds .. " 轮!")
         end
@@ -570,37 +579,41 @@ function Ambush.onFinishReward(player)
             SELECT `entry`, `name` FROM item_template 
             WHERE `Quality` > 1 AND `Quality` < 5  
                 AND `ItemLevel` <= ]]..(playerLevel + 3)..[[ 
-                AND `ItemLevel` >= ]]..(playerLevel - 3)..[[     
+                AND `ItemLevel` >= ]]..(playerLevel - 1)..[[     
                 AND `stackable` = 20 
-            ORDER BY RAND() ASC 
+            ORDER BY RAND() DESC 
             LIMIT ]]..Ambush.BattleRounds..[[;
         ]])
         if rewardItemQ then
             repeat
                 local itemRow = rewardItemQ:GetRow()
                 -- print("奖励物品id: "..itemRow['entry'])
-                player:addItem(itemRow['entry'])
+                player:AddItem(itemRow['entry'])
                 player:SendBroadcastMessage("物品奖励: "..itemRow['name'].." !")
             until not rewardItemQ:NextRow()
         end
         -- 装备奖励(击杀超过10轮)
         if Ambush.BattleRounds >= 10 then
-            local rewardEquipQ = WorldDBQuery([[
+            local rewardEquipSql = [[
                 SELECT `entry`, `name` FROM item_template 
-                WHERE `Quality` > 1 AND `Quality` < 5 
+                WHERE `Quality` > 1 AND `Quality` < 6 
                     AND `ItemLevel` <= ]]..(playerLevel + 3)..[[ 
-                    AND `ItemLevel` >= ]]..(playerLevel - 3)..[[     
+                    AND `ItemLevel` >= ]]..(playerLevel - 1)..[[     
                     AND (`class` = 2 OR `class` = 4)
-                ORDER BY RAND() ASC 
-                LIMIT 1;
-            ]])
+                ORDER BY RAND() DESC 
+                LIMIT ]]..math.floor(Ambush.BattleRounds / 10)..[[;
+            ]]
+            local rewardEquipQ = WorldDBQuery(rewardEquipSql)
+
             if rewardEquipQ then
                 repeat
                     local equipRow = rewardEquipQ:GetRow()
                     -- print("奖励装备id: "..equipRow['entry'])
-                    player:addItem(equipRow['entry'])
+                    player:AddItem(equipRow['entry'])
                     player:SendBroadcastMessage("装备奖励: "..equipRow['name'].." !")
                 until not rewardEquipQ:NextRow()
+            else
+                print("没有找到装备奖励: "..rewardEquipSql)
             end
         end
     end
@@ -631,20 +644,26 @@ function Ambush.onStartFight(_eventid, _delay, _repeats, player)
         player:SendBroadcastMessage("伏击者都是旱鸭子...我们上岸开战...")
         return
     end
-    if player:GetData("Ambush.is-in-boss-fight") then
-        player:SendBroadcastMessage("伏击者表示我们不欺负人...先等你会儿...")
+
+    local maxNum = 2
+    if player:IsInGroup() then
+        maxNum = player:GetGroup():GetMembersCount() + 1
+    end
+
+    if player:GetData("Ambush.is-in-boss-fight") or (player:GetData("Ambush.num-ambushers") or 0) >= maxNum then
+        -- player:SendBroadcastMessage("伏击者表示我们不欺负人...先等你会儿...")
         return
     end
     
     Ambush.spawnAndAttackPlayer(nil, nil, nil, player)
 end
 
-function Ambush.LoopFight(delay, player)
+function Ambush.LoopFight(player)
     player:SendBroadcastMessage("伏击者们正在向你袭来...请做好迎战准备...")
     player:SetData("Ambush.state", "on")
     
     -- 延迟冲击
-    Ambush.LoopFightCancel = player:RegisterEvent(Ambush.onStartFight, delay, 0)
+    Ambush.LoopFightCancel = player:RegisterEvent(Ambush.onStartFight, {6000, 10000}, 0)
     -- 先立马冲一波
     Ambush.onStartFight(nil, nil, nil, player)
 end
@@ -659,7 +678,22 @@ function Ambush.setupPlayer(event, player)
     Ambush.BattleRounds = 0
 end
 
+function Ambush.onPlayerLeaveCombat(event, player)
+    -- print(player:GetName().."重置怪物剩余数 0")
+    player:SetData("Ambush.num-ambushers", 0)
+end
+
+function Ambush.onPlayerDeath(event, killer, player)
+    local playerID = killer:GetData("Ambush.chase-target") or nil
+    if player == GetPlayerByGUID(playerID) then
+        killer:DespawnOrUnsummon(0)
+        print("回收杀了【"..player:GetName().."】的怪物")
+    end
+end
+
 RegisterPlayerEvent(PLAYER_EVENT_ON_LOGIN,  Ambush.setupPlayer)
 RegisterPlayerEvent(PLAYER_EVENT_ON_KILL_CREATURE, Ambush.onCreatureDeath, 0)
+RegisterPlayerEvent(PLAYER_EVENT_ON_LEAVE_COMBAT, Ambush.onPlayerLeaveCombat)
+RegisterPlayerEvent(PLAYER_EVENT_ON_KILLED_BY_CREATURE, Ambush.onPlayerDeath)
 
 ---------------------------------------------------------------------------------------------------
