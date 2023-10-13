@@ -284,6 +284,7 @@ function Ambush.pushToAmbushQueue(query, player) -- {{{
                 minLevel = query:GetUInt32(1),
                 maxLevel = query:GetUInt32(2),
             }
+            print("生成敌人队列, id: "..creature.id)
             if not Ambush.isCreatureBanned(creature.id, isRare) then
                 table.insert(creatures, creature)
             end
@@ -553,7 +554,7 @@ function Ambush.onFinishReward(player)
         -- 金币奖励
         local giveMoney = 10 * playerLevel * Ambush.BattleRounds
         player:ModifyMoney(giveMoney)
-        player:SendBroadcastMessage(string.format("货币奖励: |cFFffffff|cFF00ff00%.2f%%|r|cFFffffff 银", giveMoney / 100))
+        player:SendBroadcastMessage("货币奖励: "..giveMoney.." 铜")
 
         -- 物品奖励（可堆叠的随机）
         -- - 0: 灰色 (Poor) - 普通物品，通常没有实用价值。 
@@ -566,7 +567,7 @@ function Ambush.onFinishReward(player)
         -- - 7: 金色 (Heirloom) - 传家宝物品，可以通过角色间继承。 
         -- - 8: 灰色 (WoW Token) - 代表游戏内交易的代币。 
         local rewardItemQ = WorldDBQuery([[
-            SELECT `entry`, `name` FROM azcore.item_template 
+            SELECT `entry`, `name` FROM item_template 
             WHERE `Quality` > 1 AND `Quality` < 5  
                 AND `ItemLevel` <= ]]..(playerLevel + 3)..[[ 
                 AND `ItemLevel` >= ]]..(playerLevel - 3)..[[     
@@ -576,18 +577,16 @@ function Ambush.onFinishReward(player)
         ]])
         if rewardItemQ then
             repeat
-                local item = {
-                    entry = rewardItemQ:GetUInt32(0),
-                    name = rewardItemQ:GetString(1),
-                }
-                player.addItem(item.entry)
-                player:SendBroadcastMessage("物品奖励: "..item.name.." !")
+                local itemRow = rewardItemQ:GetRow()
+                -- print("奖励物品id: "..itemRow['entry'])
+                player:addItem(itemRow['entry'])
+                player:SendBroadcastMessage("物品奖励: "..itemRow['name'].." !")
             until not rewardItemQ:NextRow()
         end
         -- 装备奖励(击杀超过10轮)
         if Ambush.BattleRounds >= 10 then
             local rewardEquipQ = WorldDBQuery([[
-                SELECT `entry`, `name` FROM azcore.item_template 
+                SELECT `entry`, `name` FROM item_template 
                 WHERE `Quality` > 1 AND `Quality` < 5 
                     AND `ItemLevel` <= ]]..(playerLevel + 3)..[[ 
                     AND `ItemLevel` >= ]]..(playerLevel - 3)..[[     
@@ -597,12 +596,10 @@ function Ambush.onFinishReward(player)
             ]])
             if rewardEquipQ then
                 repeat
-                    local equip = {
-                        entry = rewardEquipQ:GetUInt32(0),
-                        name = rewardEquipQ:GetString(1),
-                    }
-                    player.addItem(equip.entry)
-                    player:SendBroadcastMessage("装备奖励: "..equip.name.." !")
+                    local equipRow = rewardEquipQ:GetRow()
+                    -- print("奖励装备id: "..equipRow['entry'])
+                    player:addItem(equipRow['entry'])
+                    player:SendBroadcastMessage("装备奖励: "..equipRow['name'].." !")
                 until not rewardEquipQ:NextRow()
             end
         end
@@ -634,7 +631,7 @@ function Ambush.onStartFight(_eventid, _delay, _repeats, player)
         player:SendBroadcastMessage("伏击者都是旱鸭子...我们上岸开战...")
         return
     end
-    if player:GetData("Ambush.is-in-boss-fight") or (player:GetData("Ambush.num-ambushers") or 0) >= 2 then
+    if player:GetData("Ambush.is-in-boss-fight") then
         player:SendBroadcastMessage("伏击者表示我们不欺负人...先等你会儿...")
         return
     end

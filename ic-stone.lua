@@ -131,6 +131,7 @@ ICStone.func = {
         else
             player:SetData("Ambush.state", "off")
             player:SendAreaTriggerMessage("伏击系统状态手动切换为 (off: 关闭)")
+            Ambush.onStartFight(nil, nil, nil, player)
         end
     end,
     -- ic 自动完成任务

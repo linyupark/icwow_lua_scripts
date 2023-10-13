@@ -12,7 +12,7 @@ function ICQuestAC.complete(player)
 
     -- Find all incomplete quests for the player
     local questQuery = WorldDBQuery(
-        "SELECT `ID`, `Title` FROM  acore_world.quest_template_locale WHERE ID IN (SELECT quest FROM acore_characters.character_queststatus WHERE guid = " ..
+        "SELECT `ID`, `Title` FROM  quest_template_locale WHERE ID IN (SELECT quest FROM acore_characters.character_queststatus WHERE guid = " ..
             player:GetGUIDLow() .. " AND status = " .. QUEST_STATUS_INCOMPLETE .. ") AND `locale` = 'zhCN';")
     if questQuery then
         repeat
@@ -46,5 +46,5 @@ function ICQuestAC.complete(player)
         goldToDeduct = 10000
     end
     player:ModifyMoney(-goldToDeduct)
-    player:SendBroadcastMessage(string.format("帮助完成任务消耗了你 |cFFffffff|cFF00ff00%.2f%%|r|cFFffffff 银", goldToDeduct / 100))
+    player:SendBroadcastMessage("帮助完成任务消耗了你 "..goldToDeduct.." 铜")
 end
