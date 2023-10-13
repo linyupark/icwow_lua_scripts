@@ -144,16 +144,16 @@ ICStone.menu = {
     [1] = { -- 主菜单
     {1, "怪物随机伏击系统开关.",
      ICStone.func.icAmbush, GOSSIP_ICON_BATTLE, false, "确定切换伏击状态 ?"},
-    {1, "快速发育(LV" .. ICLvup.MaxPlayerLevel .. ")", ICStone.func.icLvUp, GOSSIP_ICON_CHAT, false,
-     "是否要做|cFFF0F000速成鸡|r ?"},
+    -- {1, "快速发育(LV" .. ICLvup.MaxPlayerLevel .. ")", ICStone.func.icLvUp, GOSSIP_ICON_CHAT, false,
+    --  "是否要做|cFFF0F000速成鸡|r ?"},
     {1, "记录位置", ICStone.func.setHome, GOSSIP_ICON_CHAT, false, "是否设置当前位置为|cFFF0F000家|r ?"},
     {1, "传送回家", ICStone.func.goHome, GOSSIP_ICON_CHAT, false, "是否传送回|cFFF0F000家|r ?"},
-    {1, "完成当前所有未完成的任务", ICStone.func.icQuestAC, GOSSIP_ICON_CHAT, false, "确定消费1%的钱来省事|r ?"},
     {1, "打开银行", ICStone.func.openBank, GOSSIP_ICON_MONEY_BAG},
-    {1, "请赐予我力量吧!", ICStone.func.icBuffAura, GOSSIP_ICON_VENDOR},
-    {1, "修理所有装备", ICStone.func.repairAll, GOSSIP_ICON_VENDOR, false, "确认花钱修理全部装备 ?"},
+    {1, "召唤商人", ICMerchant.SummonNPC, GOSSIP_ICON_MONEY_BAG}, {2, "地图传送", 2, GOSSIP_ICON_BATTLE},
     {1, "免费重置天赋", ICStone.func.resetTalents, GOSSIP_ICON_TRAINER, false, "确认重置天赋 ?"},
-    {1, "召唤商人", ICMerchant.SummonNPC, GOSSIP_ICON_MONEY_BAG}, {2, "地图传送", 2, GOSSIP_ICON_BATTLE}
+    {1, "修理所有装备", ICStone.func.repairAll, GOSSIP_ICON_VENDOR, false, "确认花钱修理全部装备 ?"},
+    {1, "请赐予我力量吧!", ICStone.func.icBuffAura, GOSSIP_ICON_VENDOR},
+    {1, "完成当前所有未完成的任务", ICStone.func.icQuestAC, GOSSIP_ICON_CHAT, false, "确定消费1%的钱来省事|r ?"}
     },
     [2] = { -- 地图传送
     {2, "主要城市", 2 + 0x10, GOSSIP_ICON_BATTLE}, {2, "东部王国", 2 + 0x20, GOSSIP_ICON_BATTLE},
