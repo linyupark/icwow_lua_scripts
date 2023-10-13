@@ -550,6 +550,11 @@ function Ambush.onFinishReward(player)
         player:GiveXP(giveXP)
         player:SendBroadcastMessage("经验奖励: "..giveXP.." xp!")
 
+        -- 金币奖励
+        local giveMoney = 10 * playerLevel * Ambush.BattleRounds
+        player:ModifyMoney(giveMoney)
+        player:SendBroadcastMessage(string.format("货币奖励: |cFFffffff|cFF00ff00%.2f%%|r|cFFffffff 银", giveMoney / 100))
+
         -- 物品奖励（可堆叠的随机）
         -- - 0: 灰色 (Poor) - 普通物品，通常没有实用价值。 
         -- - 1: 白色 (Common) - 普通物品，通常没有特殊属性或效果。 
