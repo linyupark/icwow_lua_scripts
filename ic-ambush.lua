@@ -240,7 +240,7 @@ function Ambush.setupAmbushQueue(player, rank) -- {{{
     local playerLevel = player:GetLevel()
     local decRange, incRange
     
-    if rank = 0 then
+    if rank == 0 then
         -- 普通怪就找跟玩家同等级
         decRange = 0
         incRange = 2
@@ -650,7 +650,9 @@ function Ambush.onStartFight(_eventid, _delay, _repeats, player)
         maxNum = player:GetGroup():GetMembersCount() + 1
     end
 
-    if player:GetData("Ambush.is-in-boss-fight") or (player:GetData("Ambush.num-ambushers") or 0) >= maxNum then
+    if player:IsInCombat() or 
+        player:GetData("Ambush.is-in-boss-fight") or 
+        (player:GetData("Ambush.num-ambushers") or 0) >= maxNum then
         -- player:SendBroadcastMessage("伏击者表示我们不欺负人...先等你会儿...")
         return
     end
@@ -663,7 +665,7 @@ function Ambush.LoopFight(player)
     player:SetData("Ambush.state", "on")
     
     -- 延迟冲击
-    Ambush.LoopFightCancel = player:RegisterEvent(Ambush.onStartFight, {6000, 10000}, 0)
+    Ambush.LoopFightCancel = player:RegisterEvent(Ambush.onStartFight, {10000, 15000}, 0)
     -- 先立马冲一波
     Ambush.onStartFight(nil, nil, nil, player)
 end
