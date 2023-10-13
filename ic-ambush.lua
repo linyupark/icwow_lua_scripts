@@ -522,8 +522,6 @@ function Ambush.onCreatureDeath(event, killer, creature) -- {{{
             Ambush.BattleRounds = Ambush.BattleRounds + 1
             player:SendBroadcastMessage("哎哟不错哦，击杀 " .. Ambush.BattleRounds .. " 轮!")
         end
-    else
-        
     end
 end -- }}}
 
@@ -532,12 +530,81 @@ end -- }}}
 Ambush.LoopFightCancel = nil
 
 function Ambush.onFinishReward(player)
+    local playerLevel = player:GetLevel()
+
+    -- 停止放怪事件轮播
     if Ambush.LoopFightCancel ~= nil then
         player:RemoveEventById(Ambush.LoopFightCancel)
     end
     Ambush.LoopFightCancel = nil
+
+    -- 结束提示
     player:SendBroadcastMessage("伏击结束...一共击杀 "..Ambush.BattleRounds.." 轮!")
-    -- 奖励结算 TODO
+    player:SendAreaTriggerMessage("伏击系统状态自动切换为 (off: 关闭)")
+
+    -- 奖励结算
+    if Ambush.BattleRounds > 0 then
+
+        -- 经验奖励 等级*等级*轮次
+        local giveXP = playerLevel * playerLevel * Ambush.BattleRounds
+        player:GiveXP(giveXP)
+        player:SendBroadcastMessage("经验奖励: "..giveXP.." xp!")
+
+        -- 物品奖励（可堆叠的随机）
+        -- - 0: 灰色 (Poor) - 普通物品，通常没有实用价值。 
+        -- - 1: 白色 (Common) - 普通物品，通常没有特殊属性或效果。 
+        -- - 2: 绿色 (Uncommon) - 较为罕见的物品，通常具有一些额外属性或效果。 
+        -- - 3: 蓝色 (Rare) - 稀有物品，通常具有较高的属性或效果。 
+        -- - 4: 紫色 (Epic) - 史诗物品，通常具有非常强大的属性或效果。 
+        -- - 5: 橙色 (Legendary) - 传奇物品，通常是游戏中最稀有和强大的物品。 
+        -- - 6: 粉色 (Artifact) - 神器物品，通常是游戏中最珍贵和具有传奇故事的物品。 
+        -- - 7: 金色 (Heirloom) - 传家宝物品，可以通过角色间继承。 
+        -- - 8: 灰色 (WoW Token) - 代表游戏内交易的代币。 
+        local rewardItemQ = WorldDBQuery([[
+            SELECT `entry`, `name` FROM azcore.item_template 
+            WHERE `Quality` > 1 AND `Quality` < 5  
+                AND `ItemLevel` <= ]]..(playerLevel + 3)..[[ 
+                AND `ItemLevel` >= ]]..(playerLevel - 3)..[[     
+                AND `stackable` = 20 
+            ORDER BY RAND() ASC 
+            LIMIT ]]..Ambush.BattleRounds..[[;
+        ]])
+        if rewardItemQ then
+            repeat
+                local item = {
+                    entry = rewardItemQ:GetUInt32(0),
+                    name = rewardItemQ:GetString(1),
+                }
+                player.addItem(item.entry)
+                player:SendBroadcastMessage("物品奖励: "..item.name.." !")
+            until not rewardItemQ:NextRow()
+        end
+        -- 装备奖励(击杀超过10轮)
+        if Ambush.BattleRounds >= 10 then
+            local rewardEquipQ = WorldDBQuery([[
+                SELECT `entry`, `name` FROM azcore.item_template 
+                WHERE `Quality` > 1 AND `Quality` < 5 
+                    AND `ItemLevel` <= ]]..(playerLevel + 3)..[[ 
+                    AND `ItemLevel` >= ]]..(playerLevel - 3)..[[     
+                    AND (`class` = 2 OR `class` = 4)
+                ORDER BY RAND() ASC 
+                LIMIT 1;
+            ]])
+            if rewardEquipQ then
+                repeat
+                    local equip = {
+                        entry = rewardEquipQ:GetUInt32(0),
+                        name = rewardEquipQ:GetString(1),
+                    }
+                    player.addItem(equip.entry)
+                    player:SendBroadcastMessage("装备奖励: "..equip.name.." !")
+                until not rewardEquipQ:NextRow()
+            end
+        end
+    end
+    -- 奖励结束
+
+    -- 初始化系统
     Ambush.setupPlayer(nil, player)
 end
 

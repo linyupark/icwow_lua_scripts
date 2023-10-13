@@ -393,7 +393,7 @@ function ICMerchant.SummonNPC(player)
         if nowTime > ICMerchant.lastTime then
             local map = player:GetMap()
             if map then
-                player:SendAreaTriggerMessage(map:GetName())
+                -- player:SendAreaTriggerMessage(map:GetName())
                 local x, y, z = player:GetX(), player:GetY(), player:GetZ()
                 local nz = map:GetHeight(x, y)
                 if (nz > z and nz < (z + 5)) then

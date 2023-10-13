@@ -126,9 +126,11 @@ ICStone.func = {
     -- ic 伏击系统开关
     icAmbush = function(player)
         if (player:GetData("Ambush.state") or "off") == "off" then
+            player:SendAreaTriggerMessage("伏击系统状态手动切换为 (on: 开启)")
             Ambush.LoopFight({30000, 60000}, player)
         else
             player:SetData("Ambush.state", "off")
+            player:SendAreaTriggerMessage("伏击系统状态手动切换为 (off: 关闭)")
         end
     end,
     -- ic 自动完成任务
@@ -140,8 +142,8 @@ ICStone.func = {
 -- 交互菜单
 ICStone.menu = {
     [1] = { -- 主菜单
-    {1, "怪物随机伏击开启.",
-     ICStone.func.icAmbush, GOSSIP_ICON_BATTLE},
+    {1, "怪物随机伏击系统开关.",
+     ICStone.func.icAmbush, GOSSIP_ICON_BATTLE, false, "确定切换伏击状态 ?"},
     {1, "快速发育(LV" .. ICLvup.MaxPlayerLevel .. ")", ICStone.func.icLvUp, GOSSIP_ICON_CHAT, false,
      "是否要做|cFFF0F000速成鸡|r ?"},
     {1, "记录位置", ICStone.func.setHome, GOSSIP_ICON_CHAT, false, "是否设置当前位置为|cFFF0F000家|r ?"},
@@ -422,7 +424,7 @@ function ICStone.SelectGossip(event, player, item, sender, intid, code, menu_id)
 end
 
 local function OnLogin(event, player)
-    print("GM Rank: "..tostring(player:GetGMRank()))
+    -- print("GM Rank: "..tostring(player:GetGMRank()))
     if player:GetGMRank() > 0 then
         ICStone.func.resetAllCD(player)
     end
