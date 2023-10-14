@@ -12,13 +12,13 @@ function ICQuestAC.complete(player)
 
     -- Find all incomplete quests for the player
     local questQuery = WorldDBQuery(
-        "SELECT `ID`, `Title` FROM  quest_template_locale WHERE ID IN (SELECT quest FROM acore_characters.character_queststatus WHERE guid = " ..
-            player:GetGUIDLow() .. " AND status = " .. QUEST_STATUS_INCOMPLETE .. ") AND `locale` = 'zhCN';")
+        "SELECT `ID`, `LogTitle` FROM  quest_template WHERE ID IN (SELECT quest FROM acore_characters.character_queststatus WHERE guid = " ..
+            player:GetGUIDLow() .. " AND status = " .. QUEST_STATUS_INCOMPLETE .. ");")
     if questQuery then
         repeat
             local questRow = questQuery:GetRow()
             local questId = tonumber(questRow["ID"])
-            local questTitle = questRow["Title"]
+            local questTitle = questRow["LogTitle"]
 
             table.insert(incompleteQuests, {
                 id = questId,
@@ -29,7 +29,7 @@ function ICQuestAC.complete(player)
 
     if #incompleteQuests == 0 then
         player:SendBroadcastMessage(
-            "|cFFffffff|cFF00ff00这世上 |r|cFFffffff 还没有你没完成的任务呢. |cFF00ff00")
+            "|cFFffffff|cFF00ff00请跑到 |r|cFFffffff 任务附近区域 |cFF00ff00 再试试")
         return
     end
 

@@ -12,6 +12,7 @@
 -- 任务
 QUEST_STATUS_COMPLETE = 1 -- 1 = complete
 QUEST_STATUS_INCOMPLETE = 3 -- 3 = incomplete
+QUEST_STATUS_FAILED = 5
 
 -- 生物事件
 GOSSIP_EVENT_ON_HELLO = 1

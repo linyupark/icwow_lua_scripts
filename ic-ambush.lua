@@ -689,7 +689,7 @@ end
 
 function Ambush.onPlayerDeath(event, killer, player)
     local playerID = killer:GetData("Ambush.chase-target") or nil
-    if player == GetPlayerByGUID(playerID) then
+    if playerID and player == GetPlayerByGUID(playerID) then
         killer:DespawnOrUnsummon(0)
         print("回收杀了【"..player:GetName().."】的怪物")
     end

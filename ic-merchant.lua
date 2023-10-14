@@ -16,7 +16,7 @@ ICMerchant.says = {"我的货物不打折的哦", "慢慢看，我的货物在�
 ICMerchant.goods = {
     [0] = { -- 主菜单
     {"雕文", 1},
-    {"随机武器护甲", 11}},
+    {"随机武器护甲", 11},{"消耗品", 22}},
     [1] = { -- 雕文
     {"盗贼雕文", 1 + 0x10}, {"德鲁伊雕文", 1 + 0x20}, {"法师雕文", 1 + 0x30}, {"猎人雕文", 1 + 0x40},
     {"牧师雕文", 1 + 0x50}, {"骑士雕文", 1 + 0x60}, {"萨满雕文", 1 + 0x70}, {"术士雕文", 1 + 0x80},
@@ -437,6 +437,25 @@ function ICMerchant.Select(event, player, creature, sender, intid, code, menu_id
         creature:SendUnitSay(text, 0)
     end
     player:GossipComplete() -- 关闭菜单
+
+    -- 消耗品
+    if intid == 22 then
+        VendorRemoveAllItems(ICMerchant.entry)
+        -- 箭矢
+        AddVendorItem(ICMerchant.entry, 2512, 0, 0, 0)
+        AddVendorItem(ICMerchant.entry, 2515, 0, 0, 0)
+        AddVendorItem(ICMerchant.entry, 3030, 0, 0, 0)
+        AddVendorItem(ICMerchant.entry, 11285, 0, 0, 0)
+        -- 子弹
+        AddVendorItem(ICMerchant.entry, 2516, 0, 0, 0)
+        AddVendorItem(ICMerchant.entry, 2519, 0, 0, 0)
+        AddVendorItem(ICMerchant.entry, 3033, 0, 0, 0)
+        AddVendorItem(ICMerchant.entry, 11284, 0, 0, 0)
+        -- 治疗
+        AddVendorItem(ICMerchant.entry, 19028, 0, 0, 0)
+        player:SendListInventory(creature)
+        return
+    end
 
     -- 随机武器装甲
     if intid == 11 then
