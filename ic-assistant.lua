@@ -79,6 +79,15 @@ local SPELLS = {
     {name = 'chainheal', rank = '6', entry = 25423},
     {name = 'chainheal', rank = '7', entry = 55458},
     {name = 'chainheal', rank = '8', entry = 55459},
+
+    {name = 'flashheal', rank = '1', entry = 2061},
+    {name = 'flashheal', rank = '2', entry = 9472},
+    {name = 'flashheal', rank = '3', entry = 9473},
+    {name = 'flashheal', rank = '4', entry = 9474},
+    {name = 'flashheal', rank = '5', entry = 10915},
+    {name = 'flashheal', rank = '6', entry = 10916},
+    {name = 'flashheal', rank = '7', entry = 10917},
+    {name = 'flashheal', rank = '8', entry = 25233},
 }
 local ATK_SPELL = {
     'frostbolt',
@@ -86,6 +95,10 @@ local ATK_SPELL = {
     'shadowbolt',
     'arcanemissiles',
     'lightningbolt',
+}
+local HEAL_SPELL = {
+    'chainheal',
+    'flashheal'
 }
 local HPPC = 50 -- 低于多少百分比开始加血治疗为主
 
@@ -210,7 +223,8 @@ function ICAssistant.onPlayerSpellCast(event, player, playerSpell, _)
             fighting = true
         end
         -- 治疗
-        spell = getRankedSpell("chainheal", hireling, 0)
+        -- spell = getRankedSpell("chainheal", hireling, 0)
+        spell = getRankedSpell("flashheal", hireling, 0)
         -- print("chainheal spell: "..tostring(spell))
         if spell then
             hireling:CastSpell(player, spell, false)

@@ -15,7 +15,8 @@ ICMerchant.says = {"我的货物不打折的哦", "慢慢看，我的货物在�
 -- 货物清单
 ICMerchant.goods = {
     [0] = { -- 主菜单
-    {"雕文", 1}},
+    {"雕文", 1},
+    {"随机武器护甲", 11}},
     [1] = { -- 雕文
     {"盗贼雕文", 1 + 0x10}, {"德鲁伊雕文", 1 + 0x20}, {"法师雕文", 1 + 0x30}, {"猎人雕文", 1 + 0x40},
     {"牧师雕文", 1 + 0x50}, {"骑士雕文", 1 + 0x60}, {"萨满雕文", 1 + 0x70}, {"术士雕文", 1 + 0x80},
@@ -430,11 +431,39 @@ function ICMerchant.Book(event, player, creature) -- 显示菜单
 end
 
 function ICMerchant.Select(event, player, creature, sender, intid, code, menu_id) -- 添加货物
+    local playerLevel = player:GetLevel()
     local text = ICMerchant.says[math.random(1, #ICMerchant.says)] or nil
     if (text) then
         creature:SendUnitSay(text, 0)
     end
     player:GossipComplete() -- 关闭菜单
+
+    -- 随机武器装甲
+    if intid == 11 then
+        VendorRemoveAllItems(ICMerchant.entry)
+        local equipSql = [[
+            SELECT `entry`, `name` FROM item_template 
+            WHERE `Quality` > 1 AND `Quality` < 6 
+                AND `ItemLevel` <= ]]..(playerLevel + 3)..[[ 
+                AND `ItemLevel` >= ]]..(playerLevel - 1)..[[     
+                AND (`class` = 2 OR `class` = 4)
+            ORDER BY RAND() 
+            LIMIT 20;
+        ]]
+        local equipQ = WorldDBQuery(equipSql)
+
+        if equipQ then
+            repeat
+                local equipRow = equipQ:GetRow()
+                AddVendorItem(ICMerchant.entry, equipRow['entry'], 0, 0, 0)
+            until not equipQ:NextRow()
+        else
+            creature:SendUnitSay("没有找到适合你的武器装备", 0)
+        end
+        player:SendListInventory(creature)
+        return
+    end
+
     if (intid < 0x10) then
         ICMerchant.AddMenu(player, creature, intid)
     else

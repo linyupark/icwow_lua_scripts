@@ -676,6 +676,7 @@ function Ambush.setupPlayer(event, player)
     player:SetData("Ambush.queue", {})
     player:SetData("Ambush.rare-queue", {})
     player:SetData("Ambush.num-ambushers", 0)
+    player:SetData("Ambush.is-in-boss-fight", false)
     player:SetData("Ambush.state", "off")
     Ambush.BattleRounds = 0
 end
@@ -683,6 +684,7 @@ end
 function Ambush.onPlayerLeaveCombat(event, player)
     -- print(player:GetName().."重置怪物剩余数 0")
     player:SetData("Ambush.num-ambushers", 0)
+    player:SetData("Ambush.is-in-boss-fight", false)
 end
 
 function Ambush.onPlayerDeath(event, killer, player)
