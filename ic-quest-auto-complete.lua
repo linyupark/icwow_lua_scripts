@@ -11,34 +11,30 @@ function ICQuestAC.complete(player)
     local incompleteQuests = {}
 
     -- Find all incomplete quests for the player
-    local questQuery = WorldDBQuery(
-        "SELECT `ID`, `LogTitle` FROM  quest_template WHERE ID IN (SELECT quest FROM acore_characters.character_queststatus WHERE guid = " ..
+    local questQuery = CharDBQuery(
+        "SELECT `quest` FROM character_queststatus WHERE guid = " ..
             player:GetGUIDLow() .. " AND status = " .. QUEST_STATUS_INCOMPLETE .. ");")
     if questQuery then
         repeat
             local questRow = questQuery:GetRow()
-            local questId = tonumber(questRow["ID"])
-            local questTitle = questRow["LogTitle"]
+            local questId = tonumber(questRow["quest"])
 
             table.insert(incompleteQuests, {
-                id = questId,
-                title = questTitle
+                id = questId
             })
         until not questQuery:NextRow()
     end
 
     if #incompleteQuests == 0 then
         player:SendBroadcastMessage(
-            "|cFFffffff|cFF00ff00请跑到 |r|cFFffffff 任务附近区域 |cFF00ff00 再试试")
+            "|cFFffffff|cFF00ff00没有帮到你 |r|cFFffffff 任务完成失败 |cFF00ff00")
         return
     end
 
     -- Complete quests and deduce gold for each incomplete quest
     for _, quest in pairs(incompleteQuests) do
         player:CompleteQuest(quest.id)
-        player:SendBroadcastMessage(string.format(
-            "|cFFffffff|cFF00ff00任务: |r|cFFffffff%s|cFFffffff|cFF00ff00 ID:|r |cFFffffff%d|cFFffffff|cFFffffff 已为你完成",
-            quest.title, quest.id))
+        player:SendBroadcastMessage("任务ID: "..quest.id.." 已为你完成")
     end
 
     -- 设置扣钱的上限不超过1G
