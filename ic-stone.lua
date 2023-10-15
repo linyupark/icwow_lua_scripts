@@ -127,7 +127,7 @@ ICStone.func = {
     icAmbush = function(player)
         if (player:GetData("Ambush.state") or "off") == "off" then
             player:SendAreaTriggerMessage("伏击系统状态手动切换为 (on: 开启)")
-            Ambush.LoopFight({30000, 60000}, player)
+            Ambush.LoopFight(player)
         else
             player:SetData("Ambush.state", "off")
             player:SendAreaTriggerMessage("伏击系统状态手动切换为 (off: 关闭)")
@@ -137,6 +137,20 @@ ICStone.func = {
     -- ic 自动完成任务
     icQuestAC = function(player)
         ICQuestAC.complete(player)
+    end,
+    -- 打印当前地图+坐标方便加新的传送点
+    icMappin = function(player)
+        local map = player:GetMap()
+        local mapName = map:GetName()
+        local mapId = map:GetMapId()
+        local msg = mapName.." | "
+        ..tostring(mapId)..", "
+        ..player:GetX()..", "
+        ..player:GetY()..", "
+        ..player:GetZ()..", "
+        ..player:GetO()
+        print(msg)
+        player:SendBroadcastMessage(msg)
     end
 }
 
@@ -149,6 +163,7 @@ ICStone.menu = {
     --  "是否要做|cFFF0F000速成鸡|r ?"},
     {1, "记录位置", ICStone.func.setHome, GOSSIP_ICON_CHAT, false, "是否设置当前位置为|cFFF0F000家|r ?"},
     {1, "传送回家", ICStone.func.goHome, GOSSIP_ICON_CHAT, false, "是否传送回|cFFF0F000家|r ?"},
+    {1, "当前位置坐标信息", ICStone.func.icMappin, GOSSIP_ICON_CHAT},
     {1, "打开银行", ICStone.func.openBank, GOSSIP_ICON_MONEY_BAG},
     {1, "召唤商人", ICMerchant.SummonNPC, GOSSIP_ICON_MONEY_BAG}, {2, "地图传送", 2, GOSSIP_ICON_BATTLE},
     {1, "免费重置天赋", ICStone.func.resetTalents, GOSSIP_ICON_TRAINER, false, "确认重置天赋 ?"},
@@ -179,6 +194,8 @@ ICStone.menu = {
     {3, "[中立]棘齿城", 1, -955.21875, -3678.92, 8.29946, 0},
     {3, "[中立]加基森", 1, -7122.79834, -3704.82, 14.0526, 0}},
     [2 + 0x20] = { -- 东部王国
+    {3, "[矮人]国王谷", 0, -5891.2045898438, -2635.6938476562, 310.86532592773, 5.4926061630249},
+    {3, "[矮人]铁环挖掘场", 0, -5706.921875, -3788.8317871094, 322.83383178711, 1.0492267608643},
     {3, "艾尔文森林", 0, -9449.06, 64.8392, 56.3581, 3.0704},
     {3, "永歌森林", 530, 9024.37, -6682.55, 16.8973, 3.1413},
     {3, "丹莫罗", 0, -5603.76, -482.704, 396.98, 5.2349},
@@ -204,6 +221,7 @@ ICStone.menu = {
     {3, "东瘟疫之地", 0, 2280.64, -5275.05, 82.0166, 4.747},
     {3, "奎尔丹纳斯岛", 530, 12806.5, -6911.11, 41.1156, 2.2293}},
     [2 + 0x30] = { -- 卡利姆多
+    {3, "[精灵]多兰纳尔", 1, 9847.5380859375, 969.68896484375, 1306.3482666016, 3.6988995075226},
     {3, "秘蓝岛", 530, -4192.62, -12576.7, 36.7598, 1.62813}, {3, "秘血岛", 530, -2721.67, -12208.90, 9.08, 0},
     {3, "达希尔", 1, 9889.03, 915.869, 1307.43, 1.9336},
     {3, "杜隆塔尔", 1, 228.978, -4741.87, 10.1027, 0.416883},

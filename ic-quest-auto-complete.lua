@@ -4,11 +4,13 @@ ICQuestAC = {}
 ICQuestAC.cost = 0.01 -- Set the amount of gold you want to take from the player (0.025 = 2.5%)
 
 function ICQuestAC.complete(player)
+    
     local playerName = player:GetName()
     local playerGold = player:GetCoinage()
     local goldToDeduct = math.floor(playerGold * ICQuestAC.cost)
-
     local incompleteQuests = {}
+    
+    player:SaveToDB()
 
     -- Find all incomplete quests for the player
     local questQuery = CharDBQuery(
