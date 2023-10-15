@@ -13,7 +13,7 @@ function ICQuestAC.complete(player)
     -- Find all incomplete quests for the player
     local questQuery = CharDBQuery(
         "SELECT `quest` FROM character_queststatus WHERE guid = " ..
-            player:GetGUIDLow() .. " AND status = " .. QUEST_STATUS_INCOMPLETE .. ");")
+            player:GetGUIDLow() .. " AND status = " .. QUEST_STATUS_INCOMPLETE .. ";")
     if questQuery then
         repeat
             local questRow = questQuery:GetRow()

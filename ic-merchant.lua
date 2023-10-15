@@ -5,8 +5,7 @@ ICMerchant = {}
 -- 商人NPC
 ICMerchant.entry = 190099
 ICMerchant.name = "IC随身商人"
-ICMerchant.keepTime = 90000 -- 90s
-ICMerchant.lastTime = 0
+ICMerchant.keepTime = 90
 
 -- 随机的话
 ICMerchant.says = {"我的货物不打折的哦", "慢慢看，我的货物在其他地方买不到。",
@@ -387,11 +386,13 @@ ICMerchant.goods = {
 function ICMerchant.SummonNPC(player)
     -- local guid = player:GetGUIDLow()
     local nowTime = os.time()
+    local lastTime = player:GetData("ICMerchant.createTime")
+    print("nowTime:"..tostring(nowTime).."|lastTime:"..tostring(lastTime))
 
     if player:IsInCombat() then
         player:SendAreaTriggerMessage("战斗结束后才可以执行此操作")
     else
-        if nowTime > ICMerchant.lastTime then
+        if lastTime == nil or nowTime > lastTime then
             local map = player:GetMap()
             if map then
                 -- player:SendAreaTriggerMessage(map:GetName())
@@ -400,19 +401,18 @@ function ICMerchant.SummonNPC(player)
                 if (nz > z and nz < (z + 5)) then
                     z = nz
                 end
-                local NPC = player:SpawnCreature(ICMerchant.entry, x, y, z, 0, 3, ICMerchant.keepTime)
+                local NPC = player:SpawnCreature(ICMerchant.entry, x, y, z, 0, 3, ICMerchant.keepTime * 1000)
                 if NPC then
                     -- player:SendAreaTriggerMessage("召唤成功")
                     NPC:SetFacingToObject(player)
                     NPC:SendUnitSay(string.format("%s你好, 有何贵干", player:GetName()), 0)
-                    ICMerchant.lastTime = os.time() + ICMerchant.keepTime
+                    player:SetData("ICMerchant.createTime", nowTime + ICMerchant.keepTime)
                 else
                     player:SendAreaTriggerMessage("召唤操作失败")
                 end
             end
         else
-            local waitSec = math.floor((ICMerchant.lastTime - nowTime) / 1000)
-            player:SendAreaTriggerMessage("操作不能太频繁, 等待: " .. waitSec .. " 秒")
+            player:SendAreaTriggerMessage("操作不能太频繁, 等待: " .. lastTime - nowTime .. " 秒")
         end
     end
 end
@@ -497,6 +497,6 @@ function ICMerchant.Select(event, player, creature, sender, intid, code, menu_id
     end
 end
 
-math.randomseed(os.time())
+-- math.randomseed(os.time())
 RegisterCreatureGossipEvent(ICMerchant.entry, GOSSIP_EVENT_ON_HELLO, ICMerchant.Book)
 RegisterCreatureGossipEvent(ICMerchant.entry, GOSSIP_EVENT_ON_SELECT, ICMerchant.Select)
