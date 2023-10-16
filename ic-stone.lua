@@ -458,14 +458,14 @@ local function resurrectPlayer(_eventid, _delay, _repeats, player)
     ICStone.func.icBuffAura(player)
 end
 
-local function onKilledByCreature(event, player)
+local function onKilledByCreature(event, killer, player)
     local level = player:GetLevel()
-    if not level < 80 then
-        player:Say("【"..player:GetName().."】死了！")
+    if level >= 80 then
+        -- player:Say("【"..player:GetName().."】死了！")
         return
     end 
     -- 多少级死了自动复活就需要等多少秒
-    player:Say("【"..player:GetName().."】死了！但会在 "..level.." 秒后自动复活")
+    -- player:Say("【"..player:GetName().."】死了！但会在 "..level.." 秒后自动复活")
     player:SendBroadcastMessage("你将在 "..level.." 秒后自动复活")
     player:RegisterEvent(resurrectPlayer, level * 1000, 1)
 end
