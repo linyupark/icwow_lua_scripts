@@ -143,12 +143,8 @@ ICStone.func = {
         local map = player:GetMap()
         local mapName = map:GetName()
         local mapId = map:GetMapId()
-        local msg = mapName.." | "
-        ..tostring(mapId)..", "
-        ..player:GetX()..", "
-        ..player:GetY()..", "
-        ..player:GetZ()..", "
-        ..player:GetO()
+        local msg = mapName .. " | " .. tostring(mapId) .. ", " .. player:GetX() .. ", " .. player:GetY() .. ", " ..
+                        player:GetZ() .. ", " .. player:GetO()
         print(msg)
         player:SendBroadcastMessage(msg)
     end
@@ -157,8 +153,8 @@ ICStone.func = {
 -- 交互菜单
 ICStone.menu = {
     [1] = { -- 主菜单
-    {1, "怪物随机伏击系统开关.",
-     ICStone.func.icAmbush, GOSSIP_ICON_BATTLE, false, "确定切换伏击状态 ?"},
+    {1, "怪物随机伏击系统开关.", ICStone.func.icAmbush, GOSSIP_ICON_BATTLE, false,
+     "确定切换伏击状态 ?"},
     -- {1, "快速发育(LV" .. ICLvup.MaxPlayerLevel .. ")", ICStone.func.icLvUp, GOSSIP_ICON_CHAT, false,
     --  "是否要做|cFFF0F000速成鸡|r ?"},
     {1, "记录位置", ICStone.func.setHome, GOSSIP_ICON_CHAT, false, "是否设置当前位置为|cFFF0F000家|r ?"},
@@ -169,8 +165,8 @@ ICStone.menu = {
     {1, "免费重置天赋", ICStone.func.resetTalents, GOSSIP_ICON_TRAINER, false, "确认重置天赋 ?"},
     {1, "修理所有装备", ICStone.func.repairAll, GOSSIP_ICON_VENDOR, false, "确认花钱修理全部装备 ?"},
     {1, "请赐予我力量吧!", ICStone.func.icBuffAura, GOSSIP_ICON_VENDOR},
-    {1, "完成当前所有未完成的任务", ICStone.func.icQuestAC, GOSSIP_ICON_CHAT, false, "确定消费1%的钱来省事|r ?"}
-    },
+    {1, "完成当前所有未完成的任务", ICStone.func.icQuestAC, GOSSIP_ICON_CHAT, false,
+     "确定消费1%的钱来省事|r ?"}},
     [2] = { -- 地图传送
     {2, "主要城市", 2 + 0x10, GOSSIP_ICON_BATTLE}, {2, "东部王国", 2 + 0x20, GOSSIP_ICON_BATTLE},
     {2, "卡利姆多", 2 + 0x30, GOSSIP_ICON_BATTLE}, {2, "外域", 2 + 0x40, GOSSIP_ICON_BATTLE},
@@ -365,7 +361,7 @@ function ICStone.AddGossip(player, item, id)
         local mtype, text, icon, intid = v[1], (v[2] or "???"), (v[4] or GOSSIP_ICON_CHAT), (id * 0x100 + k)
         if (mtype == 2) then
             player:GossipMenuAddItem(icon, text, 0, (v[3] or id) * 0x100)
-        
+
         elseif (mtype == 1) then
             local code, msg, money = v[5], (v[6] or ""), (v[7] or 0)
             if code ~= nil then
@@ -442,13 +438,41 @@ function ICStone.SelectGossip(event, player, item, sender, intid, code, menu_id)
     end
 end
 
-local function OnLogin(event, player)
+local function onLogin(event, player)
     -- print("GM Rank: "..tostring(player:GetGMRank()))
     if player:GetGMRank() > 0 then
         ICStone.func.resetAllCD(player)
     end
+    -- 没有炉石的给一下
+    if not player:HasItem(ICStone.entry, 1, true) then
+        player:AddItem(ICStone.entry, 1)
+    end
 end
 
-RegisterPlayerEvent(PLAYER_EVENT_ON_LOGIN, OnLogin)
+-- <非满级玩家死亡等待等级对应秒后自动复活>
+
+local function resurrectPlayer(_eventid, _delay, _repeats, player)
+    -- 复活+物理保护15秒（保护祝福 41450）
+    player:ResurrectPlayer(100)
+    player:AddAura(41450, player)
+    ICStone.func.icBuffAura(player)
+end
+
+local function onKilledByCreature(event, player)
+    local level = player:GetLevel()
+    if not level < 80 then
+        player:Say("【"..player:GetName().."】死了！")
+        return
+    end 
+    -- 多少级死了自动复活就需要等多少秒
+    player:Say("【"..player:GetName().."】死了！但会在 "..level.." 秒后自动复活")
+    player:SendBroadcastMessage("你将在 "..level.." 秒后自动复活")
+    player:RegisterEvent(resurrectPlayer, level * 1000, 1)
+end
+
+-- </非满级玩家死亡等待等级对应秒后自动复活>
+
+RegisterPlayerEvent(PLAYER_EVENT_ON_LOGIN, onLogin)
+RegisterPlayerEvent(PLAYER_EVENT_ON_KILLED_BY_CREATURE, onKilledByCreature)
 RegisterItemGossipEvent(ICStone.entry, 1, ICStone.ShowGossip)
 RegisterItemGossipEvent(ICStone.entry, 2, ICStone.SelectGossip)

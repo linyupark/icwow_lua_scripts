@@ -497,6 +497,6 @@ function ICMerchant.Select(event, player, creature, sender, intid, code, menu_id
     end
 end
 
--- math.randomseed(os.time())
+math.randomseed(os.time())
 RegisterCreatureGossipEvent(ICMerchant.entry, GOSSIP_EVENT_ON_HELLO, ICMerchant.Book)
 RegisterCreatureGossipEvent(ICMerchant.entry, GOSSIP_EVENT_ON_SELECT, ICMerchant.Select)
