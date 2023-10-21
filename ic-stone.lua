@@ -462,13 +462,13 @@ local function onLogin(event, player)
         player:AddItem(ICStone.entry, 1)
     end
     -- 补学
-    if not player:HasSpell(33388) then
-        player:LearnSpell(33388)
-        player:LearnSpell(33391)
-        player:LearnSpell(34090)
-        player:LearnSpell(54197)
-        player:LearnSpell(34091)
-    end
+    -- if not player:HasSpell(33388) then
+    --     player:LearnSpell(33388)
+    --     player:LearnSpell(33391)
+    --     player:LearnSpell(34090)
+    --     player:LearnSpell(54197)
+    --     player:LearnSpell(34091)
+    -- end
 end
 
 -- <非满级玩家死亡等待等级对应秒后自动复活>
