@@ -5,7 +5,7 @@ ICLvup = {}
 
 ICLvup.MaxPlayerLevel = 80    -- Max player level change to your liking.
 local AutoDualSpec = true    -- Auto learn Dual Specialization
-local AutoRiding = true      -- Auto learn Riding
+local AutoRiding = false      -- Auto learn Riding
 local NorthrendFlyLevel = 77 -- Which level to learn Cold Weather Flying
 -- (68 = When alt characters can learn from Tome of Cold Weather Flight)
 -- (77 = Level to learn it from trainer, for first character)

@@ -1,6 +1,6 @@
 SET
 @Entry 				:= 190099,
-@Model1 			:= 14652, -- 25635,
+@Model1 			:= 25635,
 @Name 				:= "随身商人",
 @SubName			:= "小圆圆",
 @IconName			:= "Buy",

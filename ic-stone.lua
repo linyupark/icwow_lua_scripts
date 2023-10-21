@@ -108,6 +108,21 @@ ICStone.func = {
     icBuffAura = function(player)
         ICBuffAura.add(player)
     end,
+    -- ic 只升一级
+    icLvUpOne = function(player)
+        local oldLevel = player:GetLevel()
+        if (oldLevel >= 80) then
+            player:SendBroadcastMessage("你已经足够强壮")
+            return
+        end
+        player:SetLevel(oldLevel + 1)
+        -- -- dk 单独处理 (80 满级 51，出生 55级)
+        -- if player:GetClass() == 6 then
+        --     player:ResetTalents(true)
+        --     player:SetFreeTalentPoints(26 + (ICLvup.MaxPlayerLevel - 55))
+        -- end
+        player:SendBroadcastMessage("如你所愿...")
+    end,
     -- ic 一键升级
     icLvUp = function(player)
         local oldLevel = player:GetLevel()
@@ -155,8 +170,7 @@ ICStone.menu = {
     [1] = { -- 主菜单
     {1, "怪物随机伏击系统开关.", ICStone.func.icAmbush, GOSSIP_ICON_BATTLE, false,
      "确定切换伏击状态 ?"},
-    -- {1, "快速发育(LV" .. ICLvup.MaxPlayerLevel .. ")", ICStone.func.icLvUp, GOSSIP_ICON_CHAT, false,
-    --  "是否要做|cFFF0F000速成鸡|r ?"},
+    {1, "立即升级", ICStone.func.icLvUpOne, GOSSIP_ICON_CHAT, false, "是否要立即|cFFF0F000加一级|r ?"},
     {1, "记录位置", ICStone.func.setHome, GOSSIP_ICON_CHAT, false, "是否设置当前位置为|cFFF0F000家|r ?"},
     {1, "传送回家", ICStone.func.goHome, GOSSIP_ICON_CHAT, false, "是否传送回|cFFF0F000家|r ?"},
     {1, "当前位置坐标信息", ICStone.func.icMappin, GOSSIP_ICON_CHAT},
@@ -447,6 +461,14 @@ local function onLogin(event, player)
     if not player:HasItem(ICStone.entry, 1, true) then
         player:AddItem(ICStone.entry, 1)
     end
+    -- 补学
+    if not player:HasSpell(33388) then
+        player:LearnSpell(33388)
+        player:LearnSpell(33391)
+        player:LearnSpell(34090)
+        player:LearnSpell(54197)
+        player:LearnSpell(34091)
+    end
 end
 
 -- <非满级玩家死亡等待等级对应秒后自动复活>
@@ -463,10 +485,10 @@ local function onKilledByCreature(event, killer, player)
     if level >= 80 then
         -- player:Say("【"..player:GetName().."】死了！")
         return
-    end 
+    end
     -- 多少级死了自动复活就需要等多少秒
     -- player:Say("【"..player:GetName().."】死了！但会在 "..level.." 秒后自动复活")
-    player:SendBroadcastMessage("你将在 "..level.." 秒后自动复活")
+    player:SendBroadcastMessage("你将在 " .. level .. " 秒后自动复活")
     player:RegisterEvent(resurrectPlayer, level * 1000, 1)
 end
 
