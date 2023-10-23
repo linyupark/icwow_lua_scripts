@@ -552,6 +552,13 @@ function Ambush.onFinishReward(player)
     player:SendBroadcastMessage("伏击结束...一共击杀 "..Ambush.BattleRounds.." 轮!")
     player:SendAreaTriggerMessage("伏击系统状态自动切换为 (off: 关闭)")
 
+    -- 如果玩家死了，立马复活避免没有奖励
+    if player:IsDead() then
+        -- 复活+物理保护15秒（保护祝福 41450）
+        player:ResurrectPlayer(100)
+        player:AddAura(41450, player)
+    end
+
     -- 奖励结算
     if Ambush.BattleRounds > 0 then
 
